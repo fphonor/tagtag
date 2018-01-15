@@ -37,8 +37,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'tagtag.account',
+    'account',
+    'graphene_django',
+    'label',
+    'links',
 ]
+
+GRAPHENE = {
+    'SCHEMA': 'tagtag.schema.schema' # Where your Graphene schema lives
+}
+
+AUTH_USER_MODEL = 'account.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -77,8 +86,15 @@ WSGI_APPLICATION = 'tagtag.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': 'mydatabase',
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'HOST': 'localhost',
+    #     'NAME': 'learning_analysis',
+    #     'USER': 'pyskell',
+    #     'PASSWORD': '',
+    # }
 }
 
 
