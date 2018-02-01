@@ -4,17 +4,6 @@ import { connect } from 'react-redux'
 import SearchForm from './SearchForm'
 import { on_search_of_field, on_change_of_field } from '../actions'
 
-const data = []
-
-for (let i = 0; i < 46; i++) {
-  data.push({
-    key: i,
-    name: `Edward King ${i}`,
-    age: 32,
-    address: `London, Park Lane no. ${i}`,
-  })
-}
-
 
 const TitleList = ({searchFormFields, on_change_of_field, on_search_of_field}) => (<div>
       <SearchForm 
@@ -23,8 +12,8 @@ const TitleList = ({searchFormFields, on_change_of_field, on_search_of_field}) =
             fs.map(f => f).map(f => {
               return f.type === 'select-dynamic'
               ? {...f,
-                onChange: on_change_of_field('labels', f.dataIndex),
-                onSearch: on_search_of_field('labels', f.dataIndex)}
+                onChange: on_change_of_field('titles', f.dataIndex),
+                onSearch: on_search_of_field('titles', f.dataIndex)}
               : {
               ...f,
               onChange: this.handleFieldChange,
@@ -51,10 +40,13 @@ const TitleList = ({searchFormFields, on_change_of_field, on_search_of_field}) =
 
 TitleList.handleFieldChange = (value) => alert(value)
 
-const mapStateToProps = (state, ownProps) => ({
-  searchFormFields: state.searchFormFields.titles
-})
+const mapStateToProps = (state, ownProps) => {
+  return {
+    searchFormFields: state.searchFormFields.titles
+  }
+}
 
 export default connect(
   mapStateToProps,
-  { on_search_of_field, on_change_of_field })(TitleList)
+  { on_search_of_field, on_change_of_field }
+)(TitleList)

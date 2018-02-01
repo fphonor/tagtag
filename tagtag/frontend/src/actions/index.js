@@ -1,5 +1,6 @@
 import {
   ADD_LABEL,
+  INIT_LABELS,
   MODIFY_LABEL,
   DELETE_LABEL,
   FETCH_TITLES,
@@ -9,7 +10,6 @@ import {
   MODIFY_DISCOURSE,
   FETCH_TITLE,
   MODIFY_TITLE,
-  UPDATE_SFFs,
   FIELD_ON_SEARCH,
   FIELD_ON_CHANGE,
   FIELD_SEARCH_FINISHED,
@@ -30,10 +30,12 @@ export const addLabel = ({parentId, lebalType, skillType}) => (dispatch, getStat
   });
 }
 
+export const initLabels = (labels) => ({
+  type: INIT_LABELS,
+  labels: labels.map(x => ({...x, key: getNewKey()})),
+})
+
 export const modifyLabel = label => (dispatch, getState) => {
-  if (label.id === null) {
-    label.id = 99999;
-  }
   dispatch({
     type: MODIFY_LABEL,
     label
@@ -95,16 +97,6 @@ export const modifyTitle = (title) => (dispatch) => {
     title,
   }
 }
-
-export const addSearchFormFields = fields => (dispatch, getState) => ({
-  type: UPDATE_SFFs,
-  searchFormFields: getState().searchFormFields.concat(fields),
-})
-
-export const updateSearchFormFields = fields => (dispatch, getState) => ({
-  type: UPDATE_SFFs,
-  searchFormFields: getState().searchFormFields.concat(fields),
-})
 
 const get_options_dict = {
   labels: (action, dispatch) => {
@@ -213,7 +205,6 @@ export const on_search_of_field = (listName, dataIndex) => (dispatch, getState) 
 
 export const on_change_of_field = (listName, dataIndex) => (dispatch, getState) => {
   return value => {
-    debugger;
     console.log('on_change_of_field', listName, dataIndex, value)
     dispatch({
       type: FIELD_ON_CHANGE,

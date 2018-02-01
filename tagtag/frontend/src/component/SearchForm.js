@@ -32,6 +32,7 @@ class AdvancedSearchForm extends React.Component {
           </Select>
           )
       case 'select-dynamic':
+        console.log(field);
         return (
           <Select
             mode="multiple"

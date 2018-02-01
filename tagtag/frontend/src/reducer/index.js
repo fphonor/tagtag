@@ -1,6 +1,7 @@
 import { combineReducers } from 'redux'
 import {
   ADD_LABEL,
+  INIT_LABELS,
   MODIFY_LABEL,
   DELETE_LABEL,
   FETCH_TITLES,
@@ -26,6 +27,8 @@ const labels = (state = [], action) => {
       )
     case DELETE_LABEL:
       return state.filter(x => x.key !== action.label.key)
+    case INIT_LABELS:
+      return action.labels
     default:
       return state
   }

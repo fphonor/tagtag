@@ -4,7 +4,7 @@ import { Switch, Link, Route, Redirect } from 'react-router-dom'
 import { withRouter } from 'react-router'
 import TitleList from './TitleList'
 import Login from './Login'
-import { Labels } from './Labels'
+import { Labels, SubLabels } from './Labels'
 
 import 'antd/dist/antd.css'
 import logo from './logo.svg'
@@ -61,7 +61,8 @@ class App extends Component {
           </Header>
           <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', minHeight: 280 }}>
             <Switch>
-              <Route path="/labels" component={Labels}/>
+              <Route exact path="/labels" component={Labels}/>
+              <Route exact path="/labels/:parent_label_id" component={SubLabels}/>
               <Route path="/titles" component={TitleList}/>
               <Route path="/login" component={Login}/>
               <Redirect to='/titles'/>
