@@ -1,11 +1,17 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import {Modal, Table, Row, Col, Input, Button} from 'antd'
+import { Table, Row, Col, Input, Button } from 'antd'
+
+import { Link } from 'react-router-dom'
 
 import { graphql } from 'react-apollo'
 import gql from 'graphql-tag'
+import { client } from '../graphql'
+
 import SearchForm from './SearchForm'
 import { on_search_of_field, on_change_of_field } from '../actions'
+
+import { getNewKey } from '../util';
 
 const formFields = [{
   title: '语言技能',
@@ -37,15 +43,6 @@ const selectRender = dataIndex => ov => {
   // )
 }
 
-const handleChangeOfRecord = (record, dataIndex, records) => value => 
-  records.map(x => {
-    if (x === record) {
-      x[dataIndex] = value
-    }
-    return x
-  })
-
-
 const rowSelection = {
   onChange: (selectedRowKeys, selectedRows) => {
     console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows)
@@ -66,53 +63,41 @@ class ResultEditableList extends React.Component {
       currentSubLabels: label.chld
     })
   }
-  getSubLabelColumns(buttonAction) {
-    return [{
-      title: '二级标签',
-      dataIndex: 'labelName',
-      render: (text, record) => {
-        return <Input value={text} onChange={({target}) => this.setState(state => ({
-          labels: handleChangeOfRecord(record, 'labelName', state.labels)(target.value)
-        }))}/>
-      }
-    }]
-  }
   hideSubLabels () {
     this.setState({modalVisible: false})
   }
   render() {
-    let {labels, getColumns} = this.props
-    labels = labels.map((label, i) => ({...label, key: i}))
+    let {labels, columns} = this.props
+    //  labels = labels.map((label, i) => ({...label, key: i}))
     return (
       <div>
-        <Table dataSource={labels} columns={getColumns(this.showSubLabels.bind(this))} rowSelection={rowSelection}
+        <Table dataSource={labels} columns={columns} rowSelection={rowSelection}
           style={{background: '#fff', padding: '20px 0px' }} />
-        <Modal
-          title="二级标签管理"
-          wrapClassName="vertical-center-modal"
-          visible={this.state.modalVisible}
-          onOk={() => this.hideSubLabels()}
-          onCancel={() => this.hideSubLabels()}>
-          <Table dataSource={this.state.currentSubLabels} columns={getColumns(this.showSubLabels.bind(this))} rowSelection={rowSelection}
-            style={{background: '#fff', padding: '20px 0px' }} />
-        </Modal>
       </div>
     )
   }
 }
 
+//         <Modal
+//           title="二级标签管理"
+//           wrapClassName="vertical-center-modal"
+//           visible={this.state.modalVisible}
+//           onOk={() => this.hideSubLabels()}
+//           onCancel={() => this.hideSubLabels()}>
+//           <Table dataSource={this.state.currentSubLabels} columns={getColumns(this.showSubLabels.bind(this))} rowSelection={rowSelection}
+//             style={{background: '#fff', padding: '20px 0px' }} />
+//         </Modal>
 
-class LabelList extends React.Component {
+class Labels extends React.Component {
   state = {
-    fields: {'labelType': "WJN", 'skillType': 'YD'},
-    labels: [
-      {"id": "1", "labelName": "l-a", "labelType": "WJN", "labelLevel": 1, "skillType": "TL"},
-      {"id": "3", "labelName": "l-c", "labelType": "NRKJ", "labelLevel": 1, "skillType": "TL"},
-      {"id": "4", "labelName": "l-D", "labelType": "NRKJ", "labelLevel": 1, "skillType": "TL"},
-      {"id": "2", "labelName": "l-B", "labelType": "WJN", "labelLevel": 1, "skillType": "YD"},
-    ],
-    getColumns(buttonAction) {
-      return [{
+    defaultLabelFields: {
+      labelLevel: 1,
+      labelType: "WJN",
+      labelName: "",
+      parentId: null,
+      skillType: 'TL',
+    },
+    columns: [{
         title: '标签分类',
         dataIndex: 'labelType',
         render: selectRender('labelType') 
@@ -123,26 +108,46 @@ class LabelList extends React.Component {
       }, {
         title: '一级标签',
         dataIndex: 'labelName',
-        render: (text, record) => {
-          return <Input value={text} onChange={({target}) => this.setState(state => ({
-            labels: handleChangeOfRecord(record, 'labelName', state.labels)(target.value)
-          }))}/>
-        }
       }, {
         title: '二级标签设置',
         dataIndex: 'id',
         render: (text, record) => {
-          return <Button type="danger" onClick={() => buttonAction(record)}>二级标签管理</Button>
+          return (
+            <Link to={ "/labels/" + record.id }>
+              <Button type="danger" >二级标签管理</Button>
+            </Link>
+          )
         }
-      }]
-    }
+    }],
+    originLabels: [],
+    labels: [],
   }
+
+  handleChangeOfLabel = ({ label, dataIndex, value }) => {
+    this.setState({
+      labels: this.state.labels.map(l => {
+        return l.key === label.key ? {...l, [dataIndex]: value } : l
+      })
+    })
+  }
+
+  getColumns = () => {
+    const renders = {
+      'labelName': (text, label) => {
+        return <Input value={text} onChange={({ target }) => this.setState(state => ({
+          labels: this.handleChangeOfLabel({ label, dataIndex: 'labelName', value: target.value })
+        }))}/>
+      }
+    }
+    return this.state.columns.map(c => (c.render ? c : {...c, render: renders[c.dataIndex]}))
+  }
+
 
   handleFieldChange = (field, value) => {
     this.setState(state => {
-      state.fields[field] = value
+      state.defaultLabelFields[field] = value
       return {
-        fields: state.fields
+        defaultLabelFields: state.defaultLabelFields
       }
     })
   }
@@ -150,7 +155,7 @@ class LabelList extends React.Component {
   addLabel = () => {
     this.setState(state => ({
       labels: state.labels.concat(
-        [{...state.fields, labelName: null}]
+        [{...state.defaultLabelFields, labelName: "", key: getNewKey()}]
       )
     }))
   }
@@ -158,51 +163,74 @@ class LabelList extends React.Component {
   removeLabels () {console.log('removeLabels');}
   exportLabels () {console.log('exportLabels');}
 
+  shouldComponentUpdate(nextProps, nextState) {
+    let {apollo: {loading, error, labels}} = this.props
+    let {apollo: {loading: loading_n, error: error_n, labels: labels_n}} = nextProps
+    return loading !== loading_n
+      || error !== error_n
+      || labels !== labels_n
+      || !(this.state.labels.length === 0  && nextState.labels.length > 0)
+  }
+
+  initStateInRender = (apollo) => {
+    labels = apollo.labels.filter(label => {
+      let fs = this.state.defaultLabelFields
+      return label.labelLevel === 1 && (Object.keys(fs).length === 0 || Object.keys(fs).every(f => fs[f] === label[f]))
+    }).map(x => ({...x, key: getNewKey()}))
+    this.setState({ labels })
+    this.setState({ originLabels: labels })
+  }
+
   render () {
-		if (this.props.apollo && this.props.apollo.loading) { return <div>Loading</div> }
 
-		// 2
-		if (this.props.apollo && this.props.apollo.error) { return <div>Error</div> }
+    let { apollo, on_search_of_field, on_change_of_field, searchFormFields } = this.props
 
-    let labels = this.props.apollo.labels.filter(label => {
-      let fs = this.state.fields
-      return Object.keys(fs).length === 0 || Object.keys(fs).every(f => fs[f] === label[f])
-    })
+		if (apollo && apollo.loading) { return <div>Loading</div> }
+		if (apollo && apollo.error) { return <div>Error</div> }
 
-    let { on_search_of_field, on_change_of_field } = this.props
+    let labels = undefined
+    if (this.state.labels && this.state.labels.length > 0 ) {
+      labels = this.state.labels
+    } else {
+      labels = apollo.labels.filter(label => {
+        let fs = this.state.defaultLabelFields
+        return label.labelLevel === 1 && (Object.keys(fs).length === 0 || Object.keys(fs).every(f => fs[f] === label[f]))
+      }).map(x => ({...x, key: getNewKey()}))
+      this.setState({ labels })
+      this.setState({ originLabels: labels })
+    }
+
 
     return (<div>
       <SearchForm 
         formFields={
-          this.props.searchFormFields.map(f => ({
+          searchFormFields.map(f => ({
             ...f,
-            defaultValue: this.state.fields[f.dataIndex]
+            defaultValue: this.state.defaultLabelFields[f.dataIndex]
           })).map(f => {
             return f.type === 'select-dynamic'
             ? {...f,
               onChange: on_change_of_field('labels', f.dataIndex),
               onSearch: on_search_of_field('labels', f.dataIndex)}
-            : {
-            ...f,
-            onChange: this.handleFieldChange,
-          }})
+            : {...f, onChange: this.handleFieldChange,}
+          })
         }/>
       <Row>
-        <Col span={4} style={{ textAlign: 'left' }}>
+        <Col span={5} style={{ textAlign: 'right' }}>
           <Button type="primary" onClick={this.saveLabels}>保存</Button>
         </Col>
-        <Col span={4} style={{ textAlign: 'left' }}>
+        <Col span={5} style={{ textAlign: 'right' }}>
           <Button type="primary" onClick={this.removeLabels}>删除</Button>
         </Col>
-        <Col span={4} style={{ textAlign: 'left' }}>
+        <Col span={5} style={{ textAlign: 'right' }}>
           <Button type="primary" onClick={this.addLabel}>新增</Button>
         </Col>
-        <Col span={4} style={{ textAlign: 'left' }}>
+        <Col span={5} style={{ textAlign: 'right' }}>
           <Button type="primary" onClick={this.exportLabels}>导出明细</Button>
         </Col>
       </Row>
       <div className="search-result-list">
-        <ResultEditableList labels={labels} getColumns={this.state.getColumns.bind(this)}/>
+        <ResultEditableList labels={labels} columns={this.getColumns()}/>
       </div>
     </div>)
   }
@@ -210,89 +238,118 @@ class LabelList extends React.Component {
 
 class SubLabels extends React.Component {
   state = {
-    fields: {'labelType': "WJN", 'skillType': 'YD'},
-    labels: [
-      {"id": "1", "labelName": "l-a", "labelType": "WJN", "labelLevel": 1, "skillType": "TL"},
-      {"id": "3", "labelName": "l-c", "labelType": "NRKJ", "labelLevel": 1, "skillType": "TL"},
-      {"id": "4", "labelName": "l-D", "labelType": "NRKJ", "labelLevel": 1, "skillType": "TL"},
-      {"id": "2", "labelName": "l-B", "labelType": "WJN", "labelLevel": 1, "skillType": "YD"},
-    ],
-    getColumns(buttonAction) {
-      return [{
-        title: '标签分类',
-        dataIndex: 'labelType',
-        render: selectRender('labelType') 
-      }, {
-        title: '语言技能',
-        dataIndex: 'skillType',
-        render: selectRender('skillType') 
-      }, {
-        title: '一级标签',
-        dataIndex: 'labelName',
-        render: (text, record) => {
-          return <Input value={text} onChange={({target}) => this.setState(state => ({
-            labels: handleChangeOfRecord(record, 'labelName', state.labels)(target.value)
-          }))}/>
-        }
-      }, {
-        title: '二级标签设置',
-        dataIndex: 'id',
-        render: (text, record) => {
-          return <Button type="danger" onClick={() => buttonAction(record)}>二级标签管理</Button>
-        }
-      }]
-    }
+    defaultLabelFields: {},
+    originLabels: [],
+    labels: [],
   }
 
-  handleFieldChange = (field, value) => {
-    this.setState(state => {
-      state.fields[field] = value
-      return {
-        fields: state.fields
-      }
-    })
-  }
+  saveLabels () {
+    this.state.labels.
+    // client.mutate({ mutation: gql`
+    //   mutation CreateLabel {
+    //     createLabel(
+    //       labelName: "BrianWang"
+    //       parentId: 1
+    //       labelLevel: 2
+    //       skillType: "TL"
+    //       labelType: "WJN"
+    //     ) {
+    //       label {
+    //         labelName
+    //         parent {
+    //           id
+    //         }
+    //         labelLevel
+    //         skillType
+    //         labelType
+    //       }
+    //     }
+    //   }
+    // ` }).then(data => {
+    //   debugger;
+    // })
 
-  addLabel = () => {
-    this.setState(state => ({
-      labels: state.labels.concat(
-        [{...state.fields, labelName: null}]
-      )
-    }))
+    console.log('saveLabels');
   }
-  saveLabels () {console.log('saveLabels');}
   removeLabels () {console.log('removeLabels');}
   exportLabels () {console.log('exportLabels');}
 
-  render () {
-		if (this.props.apollo && this.props.apollo.loading) { return <div>Loading</div> }
+  addLabel = () => {
+    this.setState(prevState => ({
+      labels: prevState.labels.concat(
+        [{...prevState.defaultLabelFields, labelName: "", key: getNewKey()}]
+      )
+    }))
+  }
 
-		// 2
-		if (this.props.apollo && this.props.apollo.error) { return <div>Error</div> }
-
-    let labels = this.props.apollo.labels.filter(label => {
-      let fs = this.state.fields
-      return Object.keys(fs).length === 0 || Object.keys(fs).every(f => fs[f] === label[f])
+  handleChangeOfLabel = ({ label, dataIndex, value }) => {
+    this.setState({
+      labels: this.state.labels.map(l => {
+        return l.key === label.key ? {...l, [dataIndex]: value } : l
+      })
     })
+  }
 
-    let { on_search_of_field, on_change_of_field } = this.props
+  shouldComponentUpdate(nextProps, nextState) {
+    let {apollo: {loading, error, labels}} = this.props
+    let {apollo: {loading: loading_n, error: error_n, labels: labels_n}} = nextProps
+    return loading !== loading_n
+      || error !== error_n
+      || labels !== labels_n
+      || !(this.state.labels.length === 0  && nextState.labels.length > 0)
+  }
+
+  render () {
+    let {
+      apollo,
+      match: { params: { parent_label_id } }
+    } = this.props
+
+		if (apollo && apollo.loading) { return <div>Loading</div> }
+		if (apollo && apollo.error) { return <div>Error</div> }
+
+    let parent_label = apollo.labels.find(l => l.id === parent_label_id)
+    let labels = undefined
+    if (this.state.labels && this.state.labels.length > 0 ) {
+      labels = this.state.labels
+    } else {
+      labels = apollo.labels.filter(label => label.parent && label.parent.id === parent_label_id)
+                            .map(x => ({...x, key: getNewKey()}))
+      this.setState({ labels })
+      this.setState({ originLabels: labels })
+
+      if (Object.keys(this.state.defaultLabelFields).length === 0) {
+        this.setState({
+          defaultLabelFields: {
+            labelLevel: parent_label.labelLevel + 1,
+            labelType: "WJN",
+            labelName: "",
+            parentId: parent_label.id,
+            skillType: parent_label.skillType,
+          }
+        })
+      }
+    }
+
+    let { searchFormFields } = this.props
+    let headers = searchFormFields.map(
+      field => field.title + ": " + field.options.find(
+        o => o.value === parent_label[field.dataIndex]
+      ).text
+    ).concat(["一级标签: " + parent_label.labelName])
 
     return (<div>
-      <SearchForm 
-        formFields={
-          this.props.searchFormFields.map(f => ({
-            ...f,
-            defaultValue: this.state.fields[f.dataIndex]
-          })).map(f => {
-            return f.type === 'select-dynamic'
-            ? {...f,
-              onChange: on_change_of_field('labels', f.dataIndex),
-              onSearch: on_search_of_field('labels', f.dataIndex)}
-            : {
-            ...f,
-            onChange: this.handleFieldChange,
-          }})
-        }/>
+      <Row style={{margin: "15px"}}>
+        {
+          headers.map((x, i) =>
+            (
+              <Col span={24/headers.length} style={{ textAlign: 'left' }} key={i}>
+                {x} 
+              </Col>
+            )
+          )
+        }
+      </Row>
       <Row>
         <Col span={4} style={{ textAlign: 'left' }}>
           <Button type="primary" onClick={this.saveLabels}>保存</Button>
@@ -303,12 +360,19 @@ class SubLabels extends React.Component {
         <Col span={4} style={{ textAlign: 'left' }}>
           <Button type="primary" onClick={this.addLabel}>新增</Button>
         </Col>
-        <Col span={4} style={{ textAlign: 'left' }}>
-          <Button type="primary" onClick={this.exportLabels}>导出明细</Button>
-        </Col>
       </Row>
       <div className="search-result-list">
-        <ResultEditableList labels={labels} getColumns={this.state.getColumns.bind(this)}/>
+        <ResultEditableList labels={labels} columns={
+          [{
+            title: '二级标签',
+            dataIndex: 'labelName',
+            render: (text, label) => (
+              <Input value={text} onChange={
+                ({target: {value}}) => this.handleChangeOfLabel({label, dataIndex: 'labelName', value})
+              }/>
+            )
+          }]
+          }/>
       </div>
     </div>)
   }
@@ -333,11 +397,21 @@ const LABELS_QUERY = gql`
   }
 `
 
-const LabelListWithApolloGraphQL = graphql(LABELS_QUERY, { name: 'apollo' })(
+const LabelListWithApolloGraphQL = graphql(LABELS_QUERY, { name: 'apollo', fetchPolicy: 'network-only' })(
   connect(
     mapStateToProps,
     { on_search_of_field, on_change_of_field },
-  )(LabelList)
+  )(Labels)
 )
 
-export {LabelListWithApolloGraphQL as Labels, SubLabels}
+const SubLabelListWithApolloGraphQL = graphql(LABELS_QUERY, { name: 'apollo', fetchPolicy: 'network-only' })(
+  connect(
+    mapStateToProps,
+    { on_search_of_field, on_change_of_field },
+  )(SubLabels)
+)
+
+export {
+  LabelListWithApolloGraphQL as Labels,
+  SubLabelListWithApolloGraphQL as SubLabels,
+}
