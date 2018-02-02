@@ -54,11 +54,6 @@ const formFields = [{
 const selectRender = dataIndex => ov => {
   let f = formFields.find(x => x.dataIndex === dataIndex)
   return f.options.find(x => x.value === ov).text
-  // return (
-  //   <Select defaultValue={f.values.find(x => x[0] == ov)[0]} disabled>
-  //     {f.values.map(o => (<Option value={o[0]}>{o[1]}</Option>))}
-  //   </Select>
-  // )
 }
 
 const ResultEditableList = ({ labels, columns, rowSelection}) => (
@@ -69,7 +64,6 @@ const ResultEditableList = ({ labels, columns, rowSelection}) => (
 )
 
 class LabelsBase extends React.Component {
-
   handleChangeOfLabel = ({ label, dataIndex, value }) => {
     this.setState(({ errors={}, labels=[], }) => {
       let vs = {
@@ -129,27 +123,39 @@ class LabelsBase extends React.Component {
   }
 
   removeLabels = () => {
-    this.state.checkedLabels && window.confirm('确定要删除这些标签吗？') && this.state.checkedLabels.map(label => {
-      client.mutate({
-        mutation: gql`
-          mutation DeleteLabel($id: ID!) {
-            deleteLabel(id: $id) {
-              status
-            }
-          }
-        `,
-        variables: label,
-      }).then(({ data: { deleteLabel: { status }}})=> {
-        console.log('deleteLabel: ', status);
-        this.setState(({ originLabels, labels }) => {
-          return {
-            originLabels: originLabels.filter(l => l.id !== label.id),
-            labels: labels.filter(l => l.id !== label.id),
-            checkedLabels: [],
-          }
+    this.state.checkedLabels
+      && window.confirm('确定要删除这些标签吗？')
+      && this.state.checkedLabels.filter(x => !x.id).map(label => {
+           this.setState(({ labels }) => {
+             return {
+               labels: labels.filter(l => !labelSemanticEq(l, label))
+             }
+           })
+         })
+      && this.state.checkedLabels.filter(x => x.id).map(label => {
+          client.mutate({
+            mutation: gql`
+              mutation DeleteLabel($id: ID!) {
+                deleteLabel(id: $id) {
+                  status
+                }
+              }
+            `,
+            variables: label,
+          }).then(({ data: { deleteLabel: { status }}})=> {
+            console.log('deleteLabel: ', status);
+
+            this.props.apollo.labels = this.props.apollo.labels.filter(l => l.id !== label.id)
+
+            this.setState(({ originLabels, labels }) => {
+              return {
+                originLabels: originLabels.filter(l => l.id !== label.id),
+                labels: labels.filter(l => l.id !== label.id),
+                checkedLabels: [],
+              }
+            })
+          })
         })
-      })
-    })
   }
 
   exportLabels = () => {console.log('exportLabels');}
@@ -186,6 +192,8 @@ class LabelsBase extends React.Component {
     }).then(({ data: { createLabel: { label }}})=> {
       console.log('__createLabel: ', label);
       this.setState(({ originLabels, labels }) => {
+        // debugger;
+        this.props.apollo.labels = this.props.apollo.labels.concat([label])
         return {
           originLabels: originLabels.concat(
             labels.filter(x => labelSemanticEq(x, label))
@@ -196,6 +204,7 @@ class LabelsBase extends React.Component {
       })
     })
   }
+
   __modifyLabel = (label) => {
     client.mutate({
       mutation: gql`
@@ -236,7 +245,7 @@ class LabelsBase extends React.Component {
         return true;
       } else {
         let res = that.state.originLabels.find(y => {
-          return (x.id === y.id && !oEq(x, y))
+          return (x.id === y.id && !labelSemanticEq(x, y))
         })
         console.log('res: ', res)
         return !!res
@@ -306,7 +315,7 @@ class Labels extends LabelsBase {
       || !oEq(this.state.defaultLabelFields, nextState.defaultLabelFields)
       || this.state.labels.length !== nextState.labels.length
       || this.state.labels.some(o => nextState.labels.find(n => {
-        return (o.id === n.id && !oEq(o, n)) || (!o.id && n.id)
+        return (o.id === n.id && !labelSemanticEq(o, n)) || (!o.id && n.id)
       }))
   }
 
@@ -395,8 +404,8 @@ class SubLabels extends LabelsBase {
       || error !== error_n
       || labels !== labels_n
       || this.state.labels.length !== nextState.labels.length
-      || this.state.labels.some(x => nextState.labels.find(y => {
-        return (x.id === y.id && !oEq(x, y)) || (x.id === null && y.id !== null)
+      || this.state.labels.some(o => nextState.labels.find(n => {
+        return (o.id === n.id && !labelSemanticEq(o, n)) || (!o.id && n.id)
       }))
   }
 
@@ -445,7 +454,9 @@ class SubLabels extends LabelsBase {
       ).text
     ).concat(["一级标签: " + parent_label.labelName])
 
+    console.log('this.getLabels: before ', this.state.labels)
     let labels = this.getLabels(apollo, parent_label)
+    console.log('this.getLabels: after ', labels)
 
     let { errors } = this.state
     console.log("errors: " + errors)
