@@ -25,6 +25,12 @@ const oEq = (o1, o2) => {
     )
 }
 
+const labelSemanticEq = (x, y) => {
+  return ['labelName', 'labelLevel', 'labelType', 'skillType'].every(k =>
+    x[k] === y[k]
+  )
+}
+
 const formFields = [{
   title: '语言技能',
   dataIndex: 'skillType',
@@ -55,52 +61,64 @@ const selectRender = dataIndex => ov => {
   // )
 }
 
-const rowSelection = {
-  onChange: (selectedRowKeys, selectedRows) => {
-    console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows)
-  },
-  getCheckboxProps: record => ({
-    disabled: false 
-  }),
-}
-
-class ResultEditableList extends React.Component {
-  state = {
-    modalVisible: false,
-    currentSubLabels: [],
-  }
-  showSubLabels (label) {
-    this.setState({
-      modalVisible: true,
-      currentSubLabels: label.chld
-    })
-  }
-  hideSubLabels () {
-    this.setState({modalVisible: false})
-  }
-  render() {
-    let {labels, columns} = this.props
-    //  labels = labels.map((label, i) => ({...label, key: i}))
-    return (
-      <div>
-        <Table dataSource={labels} columns={columns} rowSelection={rowSelection}
-          style={{background: '#fff', padding: '20px 0px' }} />
-      </div>
-    )
-  }
-}
-
-//         <Modal
-//           title="二级标签管理"
-//           wrapClassName="vertical-center-modal"
-//           visible={this.state.modalVisible}
-//           onOk={() => this.hideSubLabels()}
-//           onCancel={() => this.hideSubLabels()}>
-//           <Table dataSource={this.state.currentSubLabels} columns={getColumns(this.showSubLabels.bind(this))} rowSelection={rowSelection}
-//             style={{background: '#fff', padding: '20px 0px' }} />
-//         </Modal>
+const ResultEditableList = ({ labels, columns, rowSelection}) => (
+  <div>
+    <Table dataSource={labels} columns={columns} rowSelection={rowSelection}
+      style={{background: '#fff', padding: '20px 0px' }} />
+  </div>
+)
 
 class LabelsBase extends React.Component {
+
+  handleChangeOfLabel = ({ label, dataIndex, value }) => {
+    this.setState(({ errors={}, labels=[], }) => {
+      let vs = {
+        [`"${value}" 已经存在了，请使用其它值`]: (labels.find(x => x[dataIndex] === value && x.id !== label.id)),
+        [`不可以使用 "${value}"，请使用其它值`]: (labels.find(x => x.id && !value)),
+      }
+      return {
+        errors: { ...errors, [ dataIndex + ":" + label.key ]: Object.keys(vs).filter(k => vs[k]) }
+      }
+    })
+    this.setState({
+      labels: this.state.labels.map(l => {
+        return l.key === label.key ? {...l, [dataIndex]: value } : l
+      })
+    })
+  }
+
+  rowSelection = {
+    onChange: (selectedRowKeys, selectedRows) => {
+      this.setState({
+        checkedLabels: selectedRows
+      })
+    },
+    getCheckboxProps: record => ({
+      disabled: false 
+    }),
+  }
+
+  saveLabels = () => {
+    console.log('saveLabels...');
+
+    let { errors } = this.state
+
+    if (
+      errors
+      && Object.keys(errors).some(k => errors[k].length > 0)
+        ) {
+      alert(
+        Object.keys(errors)
+              .filter(k => errors[k].length > 0)
+              .map(k => errors[k]))
+      return
+    }
+    this.__getModifiedLabels()
+      .filter(ml => ml.labelName && !!ml.labelName.trim())
+      .map(ml => {
+        ml.id ? this.__modifyLabel(ml) : this.__createLabel(ml)
+      })
+  }
 
   addLabel = () => {
     this.setState(prevState => ({
@@ -109,6 +127,32 @@ class LabelsBase extends React.Component {
       )
     }))
   }
+
+  removeLabels = () => {
+    this.state.checkedLabels && window.confirm('确定要删除这些标签吗？') && this.state.checkedLabels.map(label => {
+      client.mutate({
+        mutation: gql`
+          mutation DeleteLabel($id: ID!) {
+            deleteLabel(id: $id) {
+              status
+            }
+          }
+        `,
+        variables: label,
+      }).then(({ data: { deleteLabel: { status }}})=> {
+        console.log('deleteLabel: ', status);
+        this.setState(({ originLabels, labels }) => {
+          return {
+            originLabels: originLabels.filter(l => l.id !== label.id),
+            labels: labels.filter(l => l.id !== label.id),
+            checkedLabels: [],
+          }
+        })
+      })
+    })
+  }
+
+  exportLabels = () => {console.log('exportLabels');}
 
   __createLabel = (label) => {
     client.mutate({
@@ -140,18 +184,16 @@ class LabelsBase extends React.Component {
       `,
       variables: label,
     }).then(({ data: { createLabel: { label }}})=> {
-      console.log(label);
+      console.log('__createLabel: ', label);
       this.setState(({ originLabels, labels }) => {
         return {
-          originLabels: originLabels.concat([label]),
-          labels: labels.map(x => {
-            return x.labelName === label.labelName
-              ? {...label, key: x.key}
-              : x
-          }),
+          originLabels: originLabels.concat(
+            labels.filter(x => labelSemanticEq(x, label))
+                  .map(x => ({...x, id: label.id}))
+          ),
+          labels: labels.map(x => labelSemanticEq(x, label) ? {...x, id: label.id} : x),
         }
       })
-      debugger;
     })
   }
   __modifyLabel = (label) => {
@@ -178,24 +220,35 @@ class LabelsBase extends React.Component {
       `,
       variables: label,
     }).then(({ data: { modifyLabel: { label }}})=> {
-      console.log(label);
+      console.log('__modifyLabel: ', label);
       this.setState(({ originLabels }) => {
         return {
           originLabels: originLabels.map(x => x.id === label.id ? label : x)
         }
       })
-      debugger;
     })
   }
 
+  __getModifiedLabels = () => {
+    let that = this
+    return this.getLabels().filter(x => {
+      if (x.id === undefined) {
+        return true;
+      } else {
+        let res = that.state.originLabels.find(y => {
+          return (x.id === y.id && !oEq(x, y))
+        })
+        console.log('res: ', res)
+        return !!res
+      }
+    })
+  }
 }
 
 class Labels extends LabelsBase {
   state = {
     defaultLabelFields: {
-      labelLevel: 1,
-      labelType: "WJN",
-      labelName: "",
+      labelLevel: 1, labelType: "WJN", labelName: "",
       parentId: null,
       skillType: 'TL',
     },
@@ -214,7 +267,7 @@ class Labels extends LabelsBase {
         title: '二级标签设置',
         dataIndex: 'id',
         render: (text, record) => {
-          return (
+          return text === undefined ? "----" : (
             <Link to={ "/labels/" + record.id }>
               <Button type="danger" >二级标签管理</Button>
             </Link>
@@ -223,23 +276,6 @@ class Labels extends LabelsBase {
     }],
     originLabels: [],
     labels: [],
-  }
-
-  handleChangeOfLabel = ({ label, dataIndex, value }) => {
-    this.setState(({ errors={} }) => {
-      let vs = {
-        [`"${value}" 已经存在了，请使用其它值`]: (this.state.labels.find(x => x[dataIndex] === value && x.id !== label.id)),
-        [`不可以使用 "${value}"，请使用其它值`]: (this.state.labels.find(x => x.id && !value)),
-      }
-      return {
-        errors: { ...errors, [ dataIndex + ":" + label.key ]: Object.keys(vs).filter(k => vs[k]) }
-      }
-    })
-    this.setState({
-      labels: this.state.labels.map(l => {
-        return l.key === label.key ? {...l, [dataIndex]: value } : l
-      })
-    })
   }
 
   getColumns = () => {
@@ -255,51 +291,11 @@ class Labels extends LabelsBase {
 
   handleFieldChange = (field, value) => {
     this.setState(state => {
-      state.defaultLabelFields[field] = value
       return {
-        defaultLabelFields: state.defaultLabelFields
+        defaultLabelFields: { ...state.defaultLabelFields, [field]: value }
       }
     })
   }
-
-  saveLabels = () => {
-    console.log('saveLabels...');
-
-    let { errors } = this.state
-
-    if (
-      errors
-      && Object.keys(errors).some(k => errors[k].length > 0)
-        ) {
-      alert(
-        Object.keys(errors)
-              .filter(k => errors[k].length > 0)
-              .map(k => errors[k]))
-      return
-    }
-    this.__getModifiedLabels()
-      .filter(ml => ml.labelName && !!ml.labelName.trim())
-      .map(ml => {
-        ml.id ? this.__modifyLabel(ml) : this.__createLabel(ml)
-      })
-  }
-  __getModifiedLabels = () => {
-    let that = this
-    return this.getLabels().filter(x => {
-      if (x.id === undefined) {
-        return true;
-      } else {
-        let res = that.state.originLabels.find(y => {
-          return (x.id === y.id && !oEq(x, y))
-        })
-        console.log('res: ', res)
-        return !!res
-      }
-    })
-  }
-
-  removeLabels = () => {console.log('removeLabels');}
-  exportLabels = () => {console.log('exportLabels');}
 
   shouldComponentUpdate(nextProps, nextState) {
     let {apollo: {loading, error, labels}} = this.props
@@ -307,9 +303,10 @@ class Labels extends LabelsBase {
     return loading !== loading_n
       || error !== error_n
       || labels !== labels_n
-      || this.state.labels.length != nextState.labels.length
-      || this.state.labels.some(x => nextState.labels.find(y => {
-        return (x.id === y.id && !oEq(x, y))
+      || !oEq(this.state.defaultLabelFields, nextState.defaultLabelFields)
+      || this.state.labels.length !== nextState.labels.length
+      || this.state.labels.some(o => nextState.labels.find(n => {
+        return (o.id === n.id && !oEq(o, n)) || (!o.id && n.id)
       }))
   }
 
@@ -318,16 +315,17 @@ class Labels extends LabelsBase {
     if (this.state.labels && this.state.labels.length > 0 ) {
       labels = this.state.labels
     } else {
-      labels = data.labels.filter(label => {
-        let fs = this.state.defaultLabelFields
-        return label.labelLevel === 1 && ['skillType', 'labelType'].every(dataIndex => fs[dataIndex] === label[dataIndex])
-      }).map(x => ({...x, key: getNewKey()}))
+      labels = data.labels.map(x => ({...x, key: getNewKey()}))
       this.setState({
         labels,
         originLabels: labels.map(x => ({...x}))
       })
     }
-    return labels
+    return labels.filter(label => {
+      return label.labelLevel === 1
+        && ['skillType', 'labelType'].every(dataIndex =>
+          this.state.defaultLabelFields[dataIndex] === label[dataIndex])
+    })
   }
   
   render () {
@@ -347,7 +345,7 @@ class Labels extends LabelsBase {
         && Object.keys(errors).some(k => errors[k].length > 0)
         && Object.keys(errors)
                  .filter(k => errors[k].length > 0)
-                 .map(k => errors[k].map(msg => <Alert type="error" message={msg} banner />))
+                 .map(k => errors[k].map((msg, i) => <Alert key={`${k}:${i}`} type="error" message={msg} banner />))
       }
       <SearchForm 
         formFields={
@@ -377,7 +375,7 @@ class Labels extends LabelsBase {
         </Col>
       </Row>
       <div className="search-result-list">
-        <ResultEditableList labels={labels} columns={this.getColumns()}/>
+        <ResultEditableList labels={labels} columns={this.getColumns()} rowSelection={this.rowSelection}/>
       </div>
     </div>)
   }
@@ -390,71 +388,15 @@ class SubLabels extends LabelsBase {
     labels: [],
   }
 
-  saveLabels = () => {
-    console.log('saveLabels...');
-
-    let { errors } = this.state
-
-    if (
-      errors
-      && Object.keys(errors).some(k => errors[k].length > 0)
-        ) {
-      alert(
-        Object.keys(errors)
-              .filter(k => errors[k].length > 0)
-              .map(k => errors[k]))
-      return
-    }
-    this.__getModifiedLabels()
-      .filter(ml => ml.labelName && !!ml.labelName.trim())
-      .map(ml => {
-        ml.id ? this.__modifyLabel(ml) : this.__createLabel(ml)
-      })
-  }
-  __getModifiedLabels = () => {
-    let that = this
-    return this.getLabels().filter(x => {
-      if (x.id === undefined) {
-        return true;
-      } else {
-        let res = that.state.originLabels.find(y => {
-          return (x.id === y.id && !oEq(x, y))
-        })
-        console.log('res: ', res)
-        return !!res
-      }
-    })
-  }
-
-  removeLabels () {console.log('removeLabels');}
-  exportLabels () {console.log('exportLabels');}
-
-  handleChangeOfLabel = ({ label, dataIndex, value }) => {
-    this.setState(({ errors={} }) => {
-      let vs = {
-        [`"${value}" 已经存在了，请使用其它值`]: (this.state.labels.find(x => x[dataIndex] === value && x.id !== label.id)),
-        [`不可以使用 "${value}"，请使用其它值`]: (this.state.labels.find(x => x.id && !value)),
-      }
-      return {
-        errors: { ...errors, [ dataIndex + ":" + label.key ]: Object.keys(vs).filter(k => vs[k]) }
-      }
-    })
-    this.setState({
-      labels: this.state.labels.map(l => {
-        return l.key === label.key ? {...l, [dataIndex]: value } : l
-      })
-    })
-  }
-
   shouldComponentUpdate(nextProps, nextState) {
     let {apollo: {loading, error, labels}} = this.props
     let {apollo: {loading: loading_n, error: error_n, labels: labels_n}} = nextProps
     return loading !== loading_n
       || error !== error_n
       || labels !== labels_n
-      || this.state.labels.length != nextState.labels.length
+      || this.state.labels.length !== nextState.labels.length
       || this.state.labels.some(x => nextState.labels.find(y => {
-        return (x.id === y.id && !oEq(x, y))
+        return (x.id === y.id && !oEq(x, y)) || (x.id === null && y.id !== null)
       }))
   }
 
@@ -549,7 +491,7 @@ class SubLabels extends LabelsBase {
               }/>
             )
           }]
-          }/>
+          } rowSelection={this.rowSelection}/>
       </div>
     </div>)
   }
@@ -559,6 +501,8 @@ const mapStateToProps = (state, ownProps) => ({
   searchFormFields: state.searchFormFields.labels
 })
 
+const getAllLabels = () => {
+}
 const LABELS_QUERY = gql`
   query LabelsQuery {
     labels {
