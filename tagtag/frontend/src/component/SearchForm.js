@@ -26,15 +26,16 @@ class AdvancedSearchForm extends React.Component {
         return (
           <Select
             defaultValue={field.defaultValue || ""}
+            size='small'
             disabled={!!field.disabled}
-            onChange={(value) => field.onChange(field.dataIndex, value)}>
+            onChange={(value) => field.onChange(field.dataIndex, value)} >
             {field.options.map(o => (<Option value={o.value} key={o.value}>{o.text}</Option>))}
           </Select>
           )
       case 'select-dynamic':
-        console.log(field);
         return (
           <Select
+            size='small'
             mode="multiple"
             labelInValue
             value={field.value}
