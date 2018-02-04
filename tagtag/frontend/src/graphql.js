@@ -6,5 +6,18 @@ const httpLink = new HttpLink({uri: 'http://localhost:8000/graphql/'})
 
 export const client = new ApolloClient({
   link: httpLink,
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  defaultOptions: {
+    watchQuery: {
+      fetchPolicy: 'network-only',
+      errorPolicy: 'ignore',
+    },
+    query: {
+      fetchPolicy: 'network-only',
+      errorPolicy: 'all',
+    },
+    mutate: {
+      errorPolicy: 'all'
+    }
+  }
 })
