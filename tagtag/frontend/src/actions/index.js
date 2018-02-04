@@ -170,6 +170,65 @@ const get_options_dict = {
   },
 }
 
+
+const SEARCH_CONF = {
+  titles: {
+    title_course: {
+      query_params: (value) => ({
+        query: gql`
+          query OptionsQuery ($nameLike: String!) {
+            labels (labelNameLike: $nameLike) {
+              id labelName labelLevel
+            }
+          }
+        `,
+        variables: { nameLike: value },
+      }),
+      options_builder: (response) => response.data.labels
+        .filter(x => x.labelLevel === 1)
+        .map(x => ({value: x.id, text: x.labelName}))
+    },
+    unit_id: {
+      query_params: (value) => ({
+        query: gql`
+          query OptionsQuery ($nameLike: String!) {
+            labels (labelNameLike: $nameLike) {
+              id labelName labelLevel
+            }
+          }
+        `,
+        variables: { nameLike: value },
+      }),
+      options_builder: (response) => response.data.labels
+        .filter(x => x.labelLevel === 1)
+        .map(x => ({value: x.id, text: x.labelName}))
+    },
+    discourse_tag_user: {
+      query_params: (value) => ({
+        query: gql`
+          query OptionsQuery ($nameLike: String!) {
+            labels (labelNameLike: $nameLike) {
+              id labelName labelLevel
+            }
+          }
+        `,
+        variables: { nameLike: value },
+      }),
+      options_builder: (response) => response.data.labels
+        .filter(x => x.labelLevel === 1)
+        .map(x => ({value: x.id, text: x.labelName}))
+    },
+    discourse_review_user: {},
+    label_tag_user: {},
+    label_review_user: {},
+    skill_level_1: {},
+    skill_level_2: {},
+    content_level_1: {},
+    content_level_2: {},
+  },
+  lists: {}
+}
+
 export const on_search_of_field = (listName, dataIndex) => (dispatch, getState) => {
   return value => {
     console.log('on_search_of_field', listName, dataIndex, value)
@@ -211,7 +270,7 @@ export const on_change_of_field = (listName, dataIndex) => (dispatch, getState) 
       listName,
       dataIndex,
       value,
-      options: []
+      // options: [],
     })
   }
 }
