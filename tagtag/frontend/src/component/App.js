@@ -16,13 +16,32 @@ const { Header, Content, Sider } = Layout
 class App extends Component {
   state = {
     collapsed: true,
+    menus: [{
+      linkTo: '/titles',
+      content: {
+        iconType:"anticon anticon-bars",
+        text: '题目标注'
+      },
+    }, {
+      linkTo: "/labels",
+      content: {
+        iconType:"flag",
+        text: '标签管理'
+      },
+    }],
   }
   toggle = () => {
     this.setState({
       collapsed: !this.state.collapsed,
     })
   }
+
   render() {
+    let defaultMenu = this.state.menus.find((m, i) => {
+      return this.props.location.pathname.startsWith(m.linkTo)
+    })
+    let defaultSelectedKeys = [this.state.menus.indexOf(defaultMenu).toString()]
+
     return (
       <Layout style={{height: "100%"}}>
         <Sider
@@ -30,26 +49,22 @@ class App extends Component {
           collapsible
           collapsed={this.state.collapsed}
           >
-          <Menu theme="dark" mode="inline" defaultSelectedKeys={['1']}>
-            <Menu.Item key="0">
+          <Menu theme="dark" mode="inline" defaultSelectedKeys={defaultSelectedKeys}>
+            <Menu.Item key={-1}>
               <Link to="/">
                 <div className=".App-logo" >
                   <img src={logo} alt="logo"/>
                 </div>
               </Link>
             </Menu.Item>
-            <Menu.Item key="2">
-              <Link to="/titles">
-                <Icon type="anticon anticon-bars" />
-                <span>题目标注</span>
-              </Link>
-            </Menu.Item>
-            <Menu.Item key="1">
-              <Link to="/labels">
-                <Icon type="flag" />
-                <span>标签管理</span>
-              </Link>
-            </Menu.Item>
+            {this.state.menus.map((menu, i) => (
+              <Menu.Item key={i}>
+                <Link to={menu.linkTo}>
+                  <Icon type={menu.content.iconType} />
+                  <span>{menu.content.text}</span>
+                </Link>
+              </Menu.Item>
+            ))}
           </Menu>
         </Sider>
         <Layout>
