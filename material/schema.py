@@ -28,13 +28,37 @@ class Query(graphene.ObjectType):
         DiscourseType,
         search=graphene.String(),
     )
-    titles = graphene.List(TitleType)
+    titles = graphene.List(
+        TitleType,
+        platform=graphene.String(), #平台
+        title_type=graphene.String(), #类型
+        title_course=graphene.String(), #教材
+        unit_id=graphene.String(), #单元
+        title_category=graphene.String(), #语言技能
+        title_info=graphene.String(), #语篇关键字
+        tag_status=graphene.String(), #语篇标注状态
+        review_status=graphene.String(), #语篇评审状态
+        label_tag_status=graphene.String(), #微技能标注状态
+        label_review_status=graphene.String(), #微技能评审状态
+        label_tag_user=graphene.String(), #微技能标注人
+        label_review_user=graphene.String(), #微技能评审人
+        discourse_tag_user=graphene.String(), #语篇标注人
+        discourse_review_user=graphene.String(), #语篇评审人
+        skill_level_1=graphene.String(), #一级微技能
+        skill_level_2=graphene.String(), #二级微技能
+        content_level_1=graphene.String(), #一级内容标签
+        content_level_2=graphene.String(), #二级内容标签
+        page_num=graphene.String(), #分页数
+        page_size=graphene.String(), #每页显示数量
+    )
+
     questions = graphene.List(QuestionType)
 
     def resolve_discourses(self, info, search=None, **kwargs):
         return Discourse.objects.all()
 
     def resolve_titles(self, info, **kwargs):
+        import pdb; pdb.set_trace()
         return Title.objects.all()
 
     def resolve_questions(self, info, **kwargs):
