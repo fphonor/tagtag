@@ -7,6 +7,7 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     token = models.CharField(max_length=40)
+    role = models.CharField(max_length=40, default="default")
 
     def save(self, *args, **kwargs):
         if not self.token:

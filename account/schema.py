@@ -6,9 +6,10 @@ from graphene_django import DjangoObjectType
 from account.models import User
 
 
-# Add this method after the imports 
 # It tries to get a user from the session content
 def get_user(info):
+    return User.objects.get(pk=1)
+
     token = info.context.session.get('token')
 
     if not token:
@@ -17,7 +18,7 @@ def get_user(info):
     try:
         user = User.objects.get(token=token)
         return user
-    except:
+    except Exception:
         raise Exception('User not found!')
 
 
@@ -33,11 +34,16 @@ class CreateUser(graphene.Mutation):
         username = graphene.String(required=True)
         password = graphene.String(required=True)
         email = graphene.String(required=True)
+        role = graphene.String(required=True)
 
-    def mutate(self, info, username, password, email):
+    def mutate(self, info, username, password, email, role):
+        if User.objects.filter(username=username).count() > 0:
+            raise Exception('username: %s already exists' % username)
+
         user = User(
             username=username,
             email=email,
+            role=role,
         )
         user.set_password(password)
         user.save()
@@ -45,7 +51,7 @@ class CreateUser(graphene.Mutation):
         return CreateUser(user=user)
 
 
-class LogIn(graphene.Mutation):
+class Login(graphene.Mutation):
     user = graphene.Field(UserType)
 
     class Arguments:
@@ -59,12 +65,12 @@ class LogIn(graphene.Mutation):
             raise Exception('Invalid username or password!')
 
         info.context.session['token'] = user.token
-        return LogIn(user=user)
+        return Login(user=user)
 
 
 class Mutation(graphene.ObjectType):
     create_user = CreateUser.Field()
-    login = LogIn.Field()
+    login = Login.Field()
 
 
 class Query(graphene.ObjectType):
