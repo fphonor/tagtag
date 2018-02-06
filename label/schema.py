@@ -21,32 +21,32 @@ class Query(graphene.ObjectType):
         LabelType,
         skill_type=graphene.String(),
         label_type=graphene.String(),
-        label_level=graphene.Int(),
-        label_name=graphene.String(),
-        label_name_like=graphene.String(),
+        level=graphene.Int(),
+        name=graphene.String(),
+        name_like=graphene.String(),
         parent_id=graphene.Int(),
     )
     courses = graphene.List(
         CourseType,
-        course_name_like=graphene.String(),
-        course_ch_name_like=graphene.String(),
+        name_like=graphene.String(),
+        name_zh_like=graphene.String(),
     )
     label = graphene.Field(
         LabelType,
         id=graphene.ID()
     )
 
-    def resolve_labels(self, info, label_name_like=None, **kwargs):
-        if label_name_like:
-            return Label.objects.filter(label_name__contains=label_name_like)
+    def resolve_labels(self, info, name_like=None, **kwargs):
+        if name_like:
+            return Label.objects.filter(name__contains=name_like)
         return Label.objects.all()
 
-    def resolve_courses(self, info, course_name_like=None, course_ch_name_like=None, **kwargs):
+    def resolve_courses(self, info, name_like=None, name_zh_like=None, **kwargs):
         courses = Course.objects
-        if course_name_like:
-            courses = courses.filter(course_name__contains=course_name_like)
-        if course_ch_name_like:
-            courses = courses.filter(course_ch_name__contains=course_ch_name_like)
+        if name_like:
+            courses = courses.filter(name__contains=name_like)
+        if name_zh_like:
+            courses = courses.filter(name_zh__contains=name_zh_like)
         return courses.all()
 
     def resolve_label(self, info, id):
@@ -57,22 +57,22 @@ class CreateLabel(graphene.Mutation):
     label = graphene.Field(LabelType)
 
     class Arguments:
-        label_name = graphene.String()
+        name = graphene.String()
         parent_id = graphene.Int()
-        label_level = graphene.Int()
+        level = graphene.Int()
         skill_type = graphene.String()
         label_type = graphene.String()
 
     def mutate(self, info,
-               label_name, label_level, skill_type, label_type, parent_id=None):
+               name, level, skill_type, label_type, parent_id=None):
         user = get_user(info) or None
         if not user.is_active:
             raise Exception('User: %s(%s) not active!' % (user.username, user.email))
 
         label = Label(
-            label_name=label_name,
+            name=name,
             parent_id=parent_id,
-            label_level=label_level,
+            level=level,
             skill_type=skill_type,
             label_type=label_type,
         )
@@ -85,22 +85,17 @@ class CreateCourse(graphene.Mutation):
     course = graphene.Field(CourseType)
 
     class Arguments:
-        course_id = graphene.String()
-        course_name = graphene.String()
-        course_ch_name = graphene.String()
+        id = graphene.String()
+        name = graphene.String()
+        name_zh = graphene.String()
         unit_num = graphene.Int()
 
-    def mutate(self, info, course_id, course_name, course_ch_name, unit_num,):
+    def mutate(self, info, id, name, name_zh, unit_num,):
         user = get_user(info) or None
         if not user.is_active:
             raise Exception('User: %s(%s) not active!' % (user.username, user.email))
 
-        course = Course(
-            course_id=course_id,
-            course_name=course_name,
-            course_ch_name=course_ch_name,
-            unit_num=unit_num,
-        )
+        course = Course(id=id, name=name, name_zh=name_zh, unit_num=unit_num,)
         course.save()
 
         return CreateCourse(course=course)
@@ -110,22 +105,22 @@ class ModifyLabel(graphene.Mutation):
     label = graphene.Field(LabelType)
 
     class Arguments:
-        label_name = graphene.String()
+        name = graphene.String()
         parent_id = graphene.Int()
-        label_level = graphene.Int()
+        level = graphene.Int()
         skill_type = graphene.String()
         label_type = graphene.String()
         id = graphene.ID()
 
     def mutate(self, info,
-               id, label_name,
-               label_level=None, skill_type=None, label_type=None, parent_id=None):
+               id, name,
+               level=None, skill_type=None, label_type=None, parent_id=None):
         user = get_user(info) or None
         if not user.is_active:
             raise Exception('User: %s(%s) not active!' % (user.username, user.email))
 
         label = Label.objects.get(pk=id)
-        label.label_name = label_name
+        label.name = name
         label.save()
 
         return ModifyLabel(label=label)
