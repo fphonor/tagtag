@@ -90,6 +90,9 @@ class Discourse(models.Model):
     review_status = models.CharField(max_length=20, verbose_name="语篇评审状态", choices=REVIEW_STATUS_CHOICES, null=True)
     review_fail_reason = models.CharField(max_length=500, verbose_name="语篇评审未通过原因", null=True)
 
+    class Meta:
+        db_table = 'discourse_quata'
+
 
 class Title(models.Model):
     PLATFORM_CHOICES = (
@@ -104,7 +107,7 @@ class Title(models.Model):
 
     # 命名规则： itest题目此字段不用写入； u3教材题目以u3_作前缀+单元ID+""_""+微课序号+""_""+tab页序号+""_""+\
     #            taskpage序号+""_""+题目所在task页序号（对于unit_test的题目来说，tab页和taskpage序号都为1）
-    title_detail_path = models.CharField(max_length=50, verbose_name="题目详细路径", null=True)
+    title_detail_path = models.CharField(max_length=200, verbose_name="题目详细路径", null=True)
 
     TITLE_TYPE_CHOICES = (
         ("tk", "题库"),
@@ -120,9 +123,9 @@ class Title(models.Model):
     )
     title_category = models.CharField(max_length=20, verbose_name="题目对应分类", choices=TITLE_CATEGORY_CHOICES, null=True)
     title_info = models.TextField(verbose_name="题目内容", null=True)
-    title_url = models.CharField(max_length=300, verbose_name="题目详情页地址", null=True)
+    title_url = models.CharField(max_length=500, verbose_name="题目详情页地址", null=True)
     video_path = models.CharField(max_length=100, verbose_name="音频存放地址", null=True)
-    version = models.CharField(max_length=20, verbose_name="题目版本", null=True)
+    version = models.CharField(max_length=100, verbose_name="题目版本", null=True)
     # 语篇编号默认与题目编号一致，当后续出现同样语篇的题目时，该题目的语篇编号为最早同样语篇对应的编号
     discourse_code = models.CharField(max_length=50, verbose_name="语篇编号", null=True)
 
@@ -165,6 +168,9 @@ class Title(models.Model):
     def questions(self):
         return Question.objects.filter(title_ident=self.title_ident)
 
+    class Meta:
+        db_table = 'title_bank'
+
 
 class Question(models.Model):
     title_ident = models.CharField(max_length=50, verbose_name="题目编号", null=True)
@@ -186,3 +192,6 @@ class Question(models.Model):
     skill_level_2 = models.ForeignKey(
         Label, related_name='questions_s2', on_delete=models.deletion.DO_NOTHING,
         verbose_name="微技能二级标签", null=True,)
+
+    class Meta:
+        db_table = 'question_detail'
