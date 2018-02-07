@@ -70,18 +70,14 @@ class Discourse(models.Model):
     sentence_num = models.IntegerField(default=0, verbose_name="句子数量")
     avg_words_per_sent = models.FloatField(default=0, verbose_name="平均词数")
     flesch_kincaid_grade_level  = models.FloatField(default=0, verbose_name="文本可读性指标")
-    discourse_tag_user = models.ForeignKey(
-        User, related_name='taged_discourses', on_delete=models.deletion.DO_NOTHING,
-        verbose_name="语篇标注人", null=True,)
+    discourse_tag_user = models.CharField(max_length=50, verbose_name="语篇标注人", null=True,)
     TAG_STATUS_CHOICES = (
         ("wbz", "未标注"),
         ("dxg", "待修改"),
         ("ybz", "已标注"),
     )
     tag_status = models.CharField(max_length=20, verbose_name="语篇标注状态", choices=TAG_STATUS_CHOICES, null=True)
-    discourse_review_user = models.ForeignKey(
-        User, related_name='reviewed_discourses', on_delete=models.deletion.DO_NOTHING,
-        verbose_name="语篇评审人", null=True,)
+    discourse_review_user = models.CharField(max_length=50, verbose_name="语篇评审人", null=True,)
     REVIEW_STATUS_CHOICES = (
         ("wps", "未评审"),
         ("wtg", "评审未通过"),
@@ -131,9 +127,7 @@ class Title(models.Model):
 
     # 此字段用于关联学生做题成绩使用，标注工具不使用
     block_id = models.CharField(max_length=100, verbose_name="题目所处区域ID", null=True)
-    label_tag_user = models.ForeignKey(
-        User, related_name='taged_titles', on_delete=models.deletion.DO_NOTHING,
-        verbose_name="微技能标注人", null=True,)
+    label_tag_user = models.CharField(max_length=50, verbose_name="微技能标注人", null=True,)
 
     LABEL_TAG_STATUS_CHOICES = (
         ("wbz", "未标注"),
@@ -141,9 +135,7 @@ class Title(models.Model):
         ("ybz", "已标注"),
     )
     label_tag_status = models.CharField(max_length=20, verbose_name="微技能标注状态", choices=LABEL_TAG_STATUS_CHOICES, null=True)
-    label_review_user = models.ForeignKey(
-        User, related_name='reviewed_titles', on_delete=models.deletion.DO_NOTHING,
-        verbose_name="微技能评审人", null=True,)
+    label_review_user = models.CharField(max_length=50, verbose_name="微技能评审人", null=True,)
 
     LABEL_REVIEW_STATUS_CHOICES = (
         ("wps", "未评审"),
