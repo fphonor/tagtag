@@ -88,17 +88,17 @@ WSGI_APPLICATION = 'tagtag.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'mydatabase',
-    }
     # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'HOST': 'localhost',
-    #     'NAME': 'learning_analysis',
-    #     'USER': 'pyskell',
-    #     'PASSWORD': '',
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': 'mydatabase',
     # }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'HOST': 'localhost',
+        'NAME': 'learning_analysis',
+        'USER': 'pyskell',
+        'PASSWORD': '',
+    }
 }
 
 
