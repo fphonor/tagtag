@@ -7,6 +7,7 @@ import {
   FETCH_TITLES,
   FETCH_TITLE,
   MODIFY_TITLE,
+  UPDATE_DEFAULT_LABEL_SEARCH_FIELDS,
 } from '../constant/ActionType'
 
 import searchFormFields from './SearchFormFields'
@@ -22,7 +23,7 @@ const labels = (state = [], action) => {
       let label = action.label
       return state.map(x =>
         (x.key === label.key) 
-          ? {...x, id: label.id, labelName: label.labelName}
+          ? {...x, id: label.id, name: label.name}
           : x
       )
     case DELETE_LABEL:
@@ -76,9 +77,25 @@ const currentTitle = (state = {}, action) => {
   }
 }
 
+const defaultLabelSearchFields = (state={
+    level: 1,
+    labelType: "WJN",
+    name: "",
+    parentId: null,
+    skillType: 'TL',
+  }, action) => {
+  switch (action.type) {
+    case UPDATE_DEFAULT_LABEL_SEARCH_FIELDS:
+      return {...state, ...action.label_earch_fields}
+    default:
+      return state
+  }
+}
+
 export default combineReducers({
   labels,
   titles,
 	currentTitle,
-  searchFormFields 
+  searchFormFields,
+  defaultLabelSearchFields
 })

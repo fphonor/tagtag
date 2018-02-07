@@ -9,7 +9,7 @@ import gql from 'graphql-tag'
 import { client } from '../graphql'
 
 import SearchForm from './SearchForm'
-import { on_search_of_field, on_change_of_field } from '../actions'
+import { update_label_search_field, on_search_of_field, on_change_of_field } from '../actions'
 
 import { getNewKey } from '../util';
 
@@ -26,7 +26,7 @@ const oEq = (o1, o2) => {
 }
 
 const labelSemanticEq = (x, y) => {
-  return ['labelName', 'labelLevel', 'labelType', 'skillType'].every(k =>
+  return ['name', 'level', 'labelType', 'skillType'].every(k =>
     x[k] === y[k]
   )
 }
@@ -108,7 +108,7 @@ class LabelsBase extends React.Component {
       return
     }
     this.__getModifiedLabels()
-      .filter(ml => ml.labelName && !!ml.labelName.trim())
+      .filter(ml => ml.name && !!ml.name.trim())
       .map(ml => {
         ml.id ? this.__modifyLabel(ml) : this.__createLabel(ml)
       })
@@ -117,7 +117,7 @@ class LabelsBase extends React.Component {
   addLabel = () => {
     this.setState(prevState => ({
       labels: prevState.labels.concat(
-        [{...prevState.defaultLabelFields, labelName: "", key: getNewKey()}]
+        [{...this.props.defaultLabelFields, name: "", key: getNewKey()}]
       )
     }))
   }
@@ -164,26 +164,26 @@ class LabelsBase extends React.Component {
     client.mutate({
       mutation: gql`
         mutation CreateLabel(
-            $labelName: String!,
-            $labelLevel: Int!,
+            $name: String!,
+            $level: Int!,
             $labelType: String!,
             $skillType: String!,
             $parentId: Int
           ) {
           createLabel(
-            labelName: $labelName
+            name: $name
             parentId: $parentId
-            labelLevel: $labelLevel
+            level: $level
             skillType: $skillType
             labelType: $labelType
           ) {
             label {
               id
-              labelName
+              name
               parent {
                 id
               }
-              labelType labelLevel skillType
+              labelType level skillType
             }
           }
         }
@@ -192,7 +192,6 @@ class LabelsBase extends React.Component {
     }).then(({ data: { createLabel: { label }}})=> {
       console.log('__createLabel: ', label);
       this.setState(({ originLabels, labels }) => {
-        // debugger;
         this.props.apollo.labels = this.props.apollo.labels.concat([label])
         return {
           originLabels: originLabels.concat(
@@ -210,19 +209,19 @@ class LabelsBase extends React.Component {
       mutation: gql`
         mutation ModifyLabel(
             $id: ID!
-            $labelName: String!,
+            $name: String!,
           ) {
           modifyLabel(
             id: $id
-            labelName: $labelName
+            name: $name
           ) {
             label {
               id
-              labelName
+              name
               parent {
                 id
               }
-              labelType labelLevel skillType
+              labelType level skillType
             }
           }
         }
@@ -256,11 +255,6 @@ class LabelsBase extends React.Component {
 
 class Labels extends LabelsBase {
   state = {
-    defaultLabelFields: {
-      labelLevel: 1, labelType: "WJN", labelName: "",
-      parentId: null,
-      skillType: 'TL',
-    },
     columns: [{
         title: '标签分类',
         dataIndex: 'labelType',
@@ -271,7 +265,7 @@ class Labels extends LabelsBase {
         render: selectRender('skillType') 
       }, {
         title: '一级标签',
-        dataIndex: 'labelName',
+        dataIndex: 'name',
       }, {
         title: '二级标签设置',
         dataIndex: 'id',
@@ -289,21 +283,22 @@ class Labels extends LabelsBase {
 
   getColumns = () => {
     const renders = {
-      'labelName': (text, label) => {
+      'name': (text, label) => {
         return <Input value={text} onChange={({ target: {value} }) => this.setState(state => ({
-          labels: this.handleChangeOfLabel({ label, dataIndex: 'labelName', value: value.trim() })
+          labels: this.handleChangeOfLabel({ label, dataIndex: 'name', value: value.trim() })
         }))}/>
       }
     }
     return this.state.columns.map(c => (c.render ? c : {...c, render: renders[c.dataIndex]}))
   }
 
-  handleFieldChange = (field, value) => {
-    this.setState(state => {
-      return {
-        defaultLabelFields: { ...state.defaultLabelFields, [field]: value }
-      }
-    })
+  handleFieldChange = (field, update_label_search_field) =>  value => {
+    update_label_search_field({[field]: value })
+    // this.setState(state => {
+    //   return {
+    //     defaultLabelFields: { ...state.defaultLabelFields, [field]: value }
+    //   }
+    // })
   }
 
   shouldComponentUpdate(nextProps, nextState) {
@@ -312,7 +307,7 @@ class Labels extends LabelsBase {
     return loading !== loading_n
       || error !== error_n
       || labels !== labels_n
-      || !oEq(this.state.defaultLabelFields, nextState.defaultLabelFields)
+      || this.props.defaultLabelFields !== nextProps.defaultLabelFields
       || this.state.labels.length !== nextState.labels.length
       || this.state.labels.some(o => nextState.labels.find(n => {
         return (o.id === n.id && !labelSemanticEq(o, n)) || (!o.id && n.id)
@@ -330,22 +325,22 @@ class Labels extends LabelsBase {
         originLabels: labels.map(x => ({...x}))
       })
     }
+    let { defaultLabelFields } = this.props
     return labels.filter(label => {
-      return label.labelLevel === 1
-        && ['skillType', 'labelType'].every(dataIndex =>
-          this.state.defaultLabelFields[dataIndex] === label[dataIndex])
+      return label.level === 1
+        && ['skillType', 'labelType'].every(dataIndex => defaultLabelFields[dataIndex] === label[dataIndex])
     })
   }
   
   render () {
     let { apollo, on_search_of_field, on_change_of_field, searchFormFields } = this.props
-
-		if (apollo && apollo.loading) { return <div>Loading</div> }
-		if (apollo && apollo.error) { return <div>Error</div> }
+    if (apollo && apollo.loading) { return <div>Loading</div> }
+    if (apollo && apollo.error) { return <div>Error</div> }
 
     let labels = this.getLabels(apollo)
 
     let { errors } = this.state
+    let { defaultLabelFields } = this.props
     console.log("errors: " + errors)
 
     return (<div>
@@ -360,14 +355,14 @@ class Labels extends LabelsBase {
         formFields={
           searchFormFields.map(f => ({
             ...f,
-            defaultValue: this.state.defaultLabelFields[f.dataIndex]
+            defaultValue: defaultLabelFields[f.dataIndex]
           })).map(f => {
             return f.type === 'select-dynamic'
             ? {...f,
               onChange: on_change_of_field('labels', f.dataIndex),
               onSearch: on_search_of_field('labels', f.dataIndex)}
-            : {...f, onChange: this.handleFieldChange,}
-          })
+            : {...f, onChange: this.handleFieldChange(f.dataIndex, this.props.update_label_search_field),}
+          }).map(f => ({...f, sibling_num: searchFormFields.length}))
         }/>
       <Row>
         <Col span={5} style={{ textAlign: 'right' }}>
@@ -424,9 +419,9 @@ class SubLabels extends LabelsBase {
       if (Object.keys(this.state.defaultLabelFields).length === 0) {
         this.setState({
           defaultLabelFields: {
-            labelLevel: parent_label.labelLevel + 1,
+            level: parent_label.level + 1,
             labelType: parent_label.labelType,
-            labelName: "",
+            name: "",
             parentId: parent_label.id,
             skillType: parent_label.skillType,
           }
@@ -442,8 +437,8 @@ class SubLabels extends LabelsBase {
       match: { params: { parent_label_id } }
     } = this.props
 
-		if (apollo && apollo.loading) { return <div>Loading</div> }
-		if (apollo && apollo.error) { return <div>Error</div> }
+    if (apollo && apollo.loading) { return <div>Loading</div> }
+    if (apollo && apollo.error) { return <div>Error</div> }
 
     let parent_label = apollo.labels.find(l => l.id === parent_label_id)
 
@@ -452,7 +447,7 @@ class SubLabels extends LabelsBase {
       field => field.title + ": " + field.options.find(
         o => o.value === parent_label[field.dataIndex]
       ).text
-    ).concat(["一级标签: " + parent_label.labelName])
+    ).concat(["一级标签: " + parent_label.name])
 
     console.log('this.getLabels: before ', this.state.labels)
     let labels = this.getLabels(apollo, parent_label)
@@ -495,10 +490,10 @@ class SubLabels extends LabelsBase {
         <ResultEditableList labels={labels} columns={
           [{
             title: '二级标签',
-            dataIndex: 'labelName',
+            dataIndex: 'name',
             render: (text, label) => (
               <Input value={text} onChange={
-                ({target: {value} }) => this.handleChangeOfLabel({label, dataIndex: 'labelName', value: value.trim()})
+                ({target: {value} }) => this.handleChangeOfLabel({label, dataIndex: 'name', value: value.trim()})
               }/>
             )
           }]
@@ -509,7 +504,8 @@ class SubLabels extends LabelsBase {
 }
 
 const mapStateToProps = (state, ownProps) => ({
-  searchFormFields: state.searchFormFields.labels
+  searchFormFields: state.searchFormFields.labels,
+  defaultLabelFields: state.defaultLabelSearchFields,
 })
 
 const getAllLabels = () => {
@@ -517,11 +513,11 @@ const getAllLabels = () => {
 const LABELS_QUERY = gql`
   query LabelsQuery {
     labels {
-				id
-				labelName
-				labelType
-				skillType
-				labelLevel
+        id
+        name
+        labelType
+        skillType
+        level
         parent {
           id
         }
@@ -532,7 +528,7 @@ const LABELS_QUERY = gql`
 const LabelListWithApolloGraphQL = graphql(LABELS_QUERY, { name: 'apollo', fetchPolicy: 'network-only' })(
   connect(
     mapStateToProps,
-    { on_search_of_field, on_change_of_field },
+    { on_search_of_field, on_change_of_field, update_label_search_field },
   )(Labels)
 )
 

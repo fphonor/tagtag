@@ -28,7 +28,7 @@ class AdvancedSearchForm extends React.Component {
             defaultValue={field.defaultValue || ""}
             size='small'
             disabled={!!field.disabled}
-            onChange={(value) => field.onChange(field.dataIndex, value)} >
+            onChange={(value) => field.onChange(value)} >
             {field.options.map(o => (<Option value={o.value} key={o.value}>{o.text}</Option>))}
           </Select>
           )
@@ -37,7 +37,10 @@ class AdvancedSearchForm extends React.Component {
           <Select
             size='small'
             mode="multiple"
+            showSearch
             labelInValue
+            onBlur={field.onBlur}
+            onFocus={field.onFocus}
             value={field.value}
             placeholder={field.placeholder || ""}
             notFoundContent={field.fetching ? <Spin size="small" /> : null}
@@ -59,10 +62,9 @@ class AdvancedSearchForm extends React.Component {
   }
 
   getFields = (formFields) => {
-    let span = Math.floor(24/formFields.length)
     return formFields.map((f, i) => {
       return (
-        <Col span={span} style={{display: "block"}} key={i}>
+        <Col span={Math.floor(24/f.sibling_num)} style={{display: "block"}} key={i}>
           <FormItem
             {...formItemLayout}
             label={f.title}
