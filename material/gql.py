@@ -321,7 +321,6 @@ class ChangeLabel(graphene.Mutation):
             return Label(**dict(zip([c.name for c in cur.description], row)))
 
 
-
 class ChangeTitle(graphene.Mutation):
     title = graphene.Field(Title)
 
@@ -345,7 +344,7 @@ class ChangeQuestion(graphene.Mutation):
         skill_level_1 = graphene.String()
         skill_level_2 = graphene.String()
 
-    def mutate(self, info, title_ident, **kwargs):
+    def mutate(self, info, **kwargs):
         with utils.get_conn().cursor() as cur:
             columns = kwargs.keys()
             label_id = kwargs.get('id')
@@ -393,36 +392,102 @@ class ChangeQuestion(graphene.Mutation):
 
 
 class ChangeDiscourse(graphene.Mutation):
-    title = graphene.Field(Title)
+    discourse = graphene.Field(Discourse)
 
     class Arguments:
-        title_ident = graphene.String()
+        id = graphene.Int()
+        discourse_code = graphene.String()
+        discourse = graphene.String()
+        ls_domain = graphene.String()
+        re_domain = graphene.String()
+        ls_genre = graphene.String()
+        re_genre = graphene.String()
+        ls_activity_type = graphene.String()
+        ls_authenticity = graphene.String()
+        word_num = graphene.Int()
+        avg_syllable_num = graphene.Float()
+        lemma_num = graphene.Int()
+        family_num = graphene.Int()
+        common_rate = graphene.Float()
+        academic_rate = graphene.Float()
+        ls_audio_type = graphene.String()
+        ls_audio_all_time = graphene.Float()
+        ls_audio_real_time = graphene.Float()
+        ls_speed = graphene.Int()
+        ls_speed_type = graphene.String()
+        ls_voice_type = graphene.String()
+        re_familiarity = graphene.Int()
+        re_is_chart = graphene.String()
+        sentence_num = graphene.Int()
+        avg_words_per_sent = graphene.Float()
+        re_flesch_kincaid_grade_level = graphene.Float()
+        compound_sent_semantic_exten_num = graphene.Int()
+        compound_sent_adversative_num = graphene.Int()
+        compound_sent_select_num = graphene.Int()
+        noun_clauses_num = graphene.Int()
+        adjectival_clause_num = graphene.Int()
+        adverbial_clauses_num = graphene.Int()
+        discourse_tag_user = graphene.String()
+        tag_status = graphene.String()
+        discourse_review_user = graphene.String()
+        review_status = graphene.String()
+        review_fail_reason = graphene.String()
+        ls_speed_syllable = graphene.Float()
 
-    def mutate(self, info, title_ident, **kwargs):
-        import pdb
-        pdb.set_trace()
+    def mutate(self, info, **kwargs):
+        table_name = 'discourse_quata'
+        return _mutate(table_name, Discourse, kwargs, info)
+
+
+def _mutate(table_name, Class, kwargs, info):
+    with utils.get_conn().cursor() as cur:
+        columns = kwargs.keys()
+        record_id = kwargs.get('id')
+        if not record_id:
+            cur.execute(
+                '''
+                insert into {table_name} ({columns})
+                values ({values})
+                '''.format(
+                    **dict(
+                        table_name=table_name,
+                        columns=', '.join(map(str, columns)),
+                        values=', '.join(map(lambda x: "%%(%s)s" % x, columns)),
+                    )
+                ),
+                kwargs
+            )
+        else:
+            cur.execute(
+                '''
+                update {table_name}
+                set {columns}
+                where id=%(id)s
+                '''.format(**dict(
+                    table_name=table_name,
+                    columns=',\n'.join(
+                        map(
+                            lambda x: '{0} = %({0})s'.format(x),
+                            columns
+                        )
+                    )
+                )),
+                kwargs
+            )
+        cur.execute(
+            ''' select * from {table_name} where {conditions} '''.format(**dict(
+                table_name=table_name,
+                conditions='\n and '.join(
+                    map(lambda x: '{0} = %({0})s'.format(x), kwargs.keys())
+                ))),
+            kwargs
+        )
+        row = cur.fetchone()
+        return Class(**dict(zip([c.name for c in cur.description], row)))
 
 
 class Mutation(graphene.ObjectType):
     change_title = ChangeTitle.Field()
+    change_label= ChangeLabel.Field()
     change_question = ChangeQuestion.Field()
     change_discourse = ChangeDiscourse.Field()
-
-# 
-# schema = graphene.Schema(query=Query, auto_camelcase=False)
-# 
-# 
-# res = schema.execute('''
-#     query {
-#         titles (title_ident__in: ["u3_4", "u3_2"]) {
-#             title_ident
-#             id
-#             discourse_code
-#             discourse {
-#                 id
-#                 discourse_code
-#             }
-#         }
-#     }
-# ''')
-# import pdb; pdb.set_trace()
