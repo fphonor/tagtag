@@ -3,8 +3,10 @@ import { withRouter } from 'react-router'
 
 import { withApollo } from 'react-apollo'
 import gql from 'graphql-tag'
+import { client } from '../graphql'
+import { getNewKey } from '../util';
 
-import { Select, Tooltip, Icon, AutoComplete, Checkbox, Form, Row, Col, Input, Button } from 'antd'
+import { Table, Spin, Select, Tooltip, Icon, AutoComplete, Checkbox, Form, Row, Col, Input, Button } from 'antd'
 const FormItem = Form.Item
 const Option = Select.Option
 
@@ -17,7 +19,7 @@ const labels_query_params = (value) => {
   ? {
       query: gql`
         query OptionsQuery ($nameLike: String!) {
-          labels (nameLike: $nameLike) {
+          gp_labels (nameLike: $nameLike) {
             id label_name label_level skill_type label_type parent_id
           }
         }
@@ -38,221 +40,354 @@ const labels_query_params = (value) => {
 const AUTO_COMPLETE_HANDLERS = {
   skill_level_1: {
     query_params: labels_query_params,
-    options_builder: (response, value, fieldList) => {
-      return response.data.labels
+    options_builder: ({data: {gp_labels}}, value, question) => {
+      return gp_labels
         .filter(x => x.label_level === 1 && x.label_type === 'WJN')
         .map(x => ({value: x.id, text: x.label_name}))
     }
   },
   skill_level_2: {
     query_params: labels_query_params,
-    options_builder: (response, value, fieldList) => {
-      return response.data.labels
+    options_builder: ({data: {gp_labels}}, value, question) => {
+      let skill_level_1 = gp_labels.find(x => x.id === question.skill_level_1)
+      return gp_labels
         .filter(x => x.label_level === 2 && x.label_type === 'WJN')
-        .map(x => ({value: x.id, text: x.label_name, parent_id: x.parent_id}))
-        .filter(x => {
-          let skill_level_1 = fieldList.find(x => x.dataIndex === 'skill_level_1')
-          return skill_level_1.value ? skill_level_1.value.find(y => y.key === x.parent_id) : true
-        })
+        .filter(x => skill_level_1 ? skill_level_1.id === x.parent_id : true)
+        .map(x => ({value: x.id, text: x.label_name}))
     }
   },
   content_level_1: {
     query_params: labels_query_params,
-    options_builder: (response) => {
-      return response.data.labels
+    options_builder: ({data: {gp_labels}}, value, question) => {
+      return gp_labels
         .filter(x => x.label_level === 1 && x.label_type === 'NRKJ')
         .map(x => ({value: x.id, text: x.label_name}))
     }
   },
   content_level_2: {
     query_params: labels_query_params,
-    options_builder: (response, value, fieldList) => {
-      return response.data.labels
+    options_builder: ({data: {gp_labels}}, value, question) => {
+      let content_level_1 = gp_labels.find(x => x.id === question.content_level_1)
+      return gp_labels
         .filter(x => x.label_level === 2 && x.label_type === 'NRKJ')
-        .map(x => ({value: x.id, text: x.label_name, parent_id: x.parent_id}))
-        .filter(x => {
-          let content_level_1= fieldList.find(x => x.dataIndex === 'content_level_1')
-          return content_level_1.value ? content_level_1.value.find(y => y.key === x.parent_id) : true
-        })
+        .filter(x => content_level_1 ? content_level_1.id === x.parent_id : true)
+        .map(x => ({value: x.id, text: x.label_name}))
     }
   },
 }
 
-
-class Labels extends LabelsBase {
-  state = {
-    columns: [{
-        title: "问题序号",
-        dataIndex: 'question_index',
-        render: (text, record) => <Input value={text} onChange={handleQuestionFieldChange('label_type')}/>
-      }, {
-        title: "微技能一级标签",
-        dataIndex: 'skill_level_1',
-        render: selectRender('skill_level_1') 
-      }, {
-        title: "微技能二级标签",
-        dataIndex: 'skill_level_2',
-        render: selectRender('skill_level_2') 
-      }, {
-        title: "内容一级标签",
-        dataIndex: 'content_level_1',
-        render: selectRender('content_level_1') 
-      }, {
-        title: "内容二级标签",
-        dataIndex: 'content_level_2',
-        render: selectRender('content_level_2') 
-    }],
-    originLabels: [],
-    gp_labels: [],
-  }
-
-  getColumns = () => {
-    const renders = {
-      'label_name': (text, label) => {
-        return <Input value={text} onChange={({ target: {value} }) => this.setState(state => ({
-          gp_labels: this.handleChangeOfLabel({ label, dataIndex: 'label_name', value: value.trim() })
-        }))}/>
-      }
-    }
-    return this.state.columns.map(c => (c.render ? c : {...c, render: renders[c.dataIndex]}))
-  }
-
-  handleFieldChange = (field, update_label_search_field) =>  value => {
-    update_label_search_field({[field]: value })
-    // this.setState(state => {
-    //   return {
-    //     defaultLabelFields: { ...state.defaultLabelFields, [field]: value }
-    //   }
-    // })
-  }
-
-  shouldComponentUpdate(nextProps, nextState) {
-    let {apollo: {loading, error, gp_labels}} = this.props
-    let {apollo: {loading: loading_n, error: error_n, gp_labels: labels_n}} = nextProps
-    return loading !== loading_n
-      || error !== error_n
-      || gp_labels !== labels_n
-      || this.props.defaultLabelFields !== nextProps.defaultLabelFields
-      || this.state.gp_labels.length !== nextState.gp_labels.length
-      || this.state.gp_labels.some(o => nextState.gp_labels.find(n => {
-        return (o.id === n.id && !labelSemanticEq(o, n)) || (!o.id && n.id)
-      }))
-  }
-
-  getLabels = (data) => {
-    let gp_labels = undefined
-    if (this.state.gp_labels && this.state.gp_labels.length > 0 ) {
-      gp_labels = this.state.gp_labels
-    } else {
-      gp_labels = data.gp_labels.map(x => ({...x, key: getNewKey()}))
-      this.setState({
-        gp_labels,
-        originLabels: gp_labels.map(x => ({...x}))
-      })
-    }
-    let { defaultLabelFields } = this.props
-    return gp_labels.filter(label => {
-      return label.label_level === 1
-        && ['skill_type', 'label_type'].every(dataIndex => defaultLabelFields[dataIndex] === label[dataIndex])
-    })
-  }
-  
-  render () {
-    let { apollo, on_search_of_field, on_change_of_field, searchFormFields } = this.props
-    if (apollo && apollo.loading) { return <div>Loading</div> }
-    if (apollo && apollo.error) { return <div>Error</div> }
-
-    let gp_labels = this.getLabels(apollo)
-
-    let { errors } = this.state
-    let { defaultLabelFields } = this.props
-    console.log("errors: " + errors)
-
-    return (<div>
-      {
-        errors
-        && Object.keys(errors).some(k => errors[k].length > 0)
-        && Object.keys(errors)
-                 .filter(k => errors[k].length > 0)
-                 .map(k => errors[k].map((msg, i) => <Alert key={`${k}:${i}`} type="error" message={msg} banner />))
-      }
-      <SearchForm 
-        formFields={
-          searchFormFields.map(f => ({
-            ...f,
-            defaultValue: defaultLabelFields[f.dataIndex]
-          })).map(f => {
-            return f.type === 'select-dynamic'
-            ? {...f,
-              onChange: on_change_of_field('gp_labels', f.dataIndex),
-              onSearch: on_search_of_field('gp_labels', f.dataIndex)}
-            : {...f, onChange: this.handleFieldChange(f.dataIndex, this.props.update_label_search_field),}
-          }).map(f => ({...f, sibling_num: searchFormFields.length}))
-        }/>
-      <Row>
-        <Col span={5} style={{ textAlign: 'right' }}>
-          <Button type="primary" onClick={this.saveLabels}>保存</Button>
-        </Col>
-        <Col span={5} style={{ textAlign: 'right' }}>
-          <Button type="primary" onClick={this.removeLabels}>删除</Button>
-        </Col>
-        <Col span={5} style={{ textAlign: 'right' }}>
-          <Button type="primary" onClick={this.addLabel}>新增</Button>
-        </Col>
-        <Col span={5} style={{ textAlign: 'right' }}>
-          <Button type="primary" onClick={this.exportLabels}>导出明细</Button>
-        </Col>
-      </Row>
-      <div className="search-result-list">
-        <ResultEditableList gp_labels={gp_labels} columns={this.getColumns()} rowSelection={this.rowSelection}/>
-      </div>
-    </div>)
+const _getProperContent = (field) => {
+  switch (field.type) {
+    case 'select':
+      return (
+        <Select
+          defaultValue={field.defaultValue || ""}
+          size='small'
+          disabled={!!field.disabled}
+          onChange={(value) => field.onChange(value)} >
+          {field.options.map(o => (<Option value={o.value} key={o.value}>{o.text}</Option>))}
+        </Select>
+        )
+    case 'select-dynamic':
+      return (
+        <Select
+          size='small'
+          mode="multiple"
+          showSearch
+          labelInValue
+          onBlur={field.onBlur}
+          onFocus={field.onFocus}
+          value={field.value}
+          placeholder={field.placeholder || ""}
+          notFoundContent={field.fetching ? <Spin size="small" /> : null}
+          filterOption={false}
+          onSearch={value => field.onSearch(value)}
+          onChange={value => field.onChange(value)}
+          style={{ width: '100%' }}
+          >
+          {field.options.map(d => <Option key={d.value}>{d.text}</Option>)}
+        </Select>
+      )
+    case 'text':
+      return ': ' + (field.options
+        ? field.options.find(o => o.value === field.defaultValue).text
+        : field.defaultValue)
+    default:
+      return "No proper field type"
   }
 }
 
-class Questions extends React.Component {
-  state = {
-    questions: []
-    origin_questions: []
+const on_change_of_field = (that, dataIndex, question, questions) => {
+  return value => {
+    console.log('on_change_of_field', dataIndex, question, questions, that, value)
+    let field_value = value && value[0] && value[0].key
+    that.setState(({ questions }) => ({
+      questions: questions.map(x => x === question ? {...x, [dataIndex]: field_value ? parseInt(field_value) : undefined} : x)
+    }))
   }
-  on_change_of_field(dataIndex) {
-    that = this
-    return (value, record) => {
-      this.setState(state => ({
-        questions: state.questions.map(x => x.key === record.key ? {...x, [dataIndex]: value} : x)
-      }))
-    }
+}
+
+const on_search_of_field = (that, dataIndex, question, questions, fieldList) => {
+  return (value) => {
+    console.log('on_search_of_field', dataIndex, question, questions, that, value)
+    client.query(
+      AUTO_COMPLETE_HANDLERS[dataIndex].query_params(value)
+    ).then(response => {
+      that.setState(({ questions_options }) => {
+        questions_options[questions.indexOf(question)] = {
+          ...questions_options[questions.indexOf(question)],
+          [dataIndex]: AUTO_COMPLETE_HANDLERS[dataIndex].options_builder(response, value, question),
+        }
+        return { questions_options }
+      })
+    })
+  }
+}
+
+const oEq = (o1, o2) => {
+  let ks1 = Object.keys(o1).filter(k => k !== 'key')
+  let ks2 = Object.keys(o2).filter(k => k !== 'key')
+  return ks1.length === ks2.length
+    && ks1.every(k => ks2.find(k2 => k === k2))
+    && ks1.every(k => o1[k] === o2[k])
+}
+
+const labelSemanticEq = (x, y) => {
+  return ['label_name', 'label_level', 'label_type', 'skill_type'].every(k =>
+    x[k] === y[k]
+  )
+}
+
+class QuestionsBase extends React.Component {
+  handleChangeOfQuestion = ({ label, dataIndex, value }) => {
+    this.setState(({ errors={}, questions=[], }) => {
+      let vs = {
+        [`"${value}" 已经存在了，请使用其它值`]: (questions.find(x => x[dataIndex] === value && x.id !== label.id)),
+        [`不可以使用 "${value}"，请使用其它值`]: (questions.find(x => x.id && !value)),
+      }
+      return {
+        errors: { ...errors, [ dataIndex + ":" + label.key ]: Object.keys(vs).filter(k => vs[k]) }
+      }
+    })
+    this.setState({
+      questions: this.state.questions.map(l => {
+        return l.key === label.key ? {...l, [dataIndex]: value } : l
+      })
+    })
   }
 
-  on_search_of_field(dataIndex) {
-    that = this
-    return value => {
-      console.log('on_search_of_field', fieldList, listName, dataIndex, value)
-      let action = {
-        type: QUESTION_FIELD_ON_SEARCH,
-        listName,
-        dataIndex,
-        value,
-      }
-      dispatch(action)
-      client.query(
-        SEARCH_CONF[listName][dataIndex].query_params(value)
-      ).then(response => {
-        dispatch({
-          ...action,
-          type: FIELD_SEARCH_FINISHED,
-          options: SEARCH_CONF[listName][dataIndex].options_builder(response, value, fieldList),
-        })
+  rowSelection = {
+    onChange: (selectedRowKeys, selectedRows) => {
+      this.setState({
+        checked_questions: selectedRows
       })
+    },
+    getCheckboxProps: record => ({
+      disabled: false 
+    }),
+  }
+
+  saveQuestions = () => {
+    console.log('saveQuestions...');
+
+    let { errors } = this.state
+
+    if (
+      errors
+      && Object.keys(errors).some(k => errors[k].length > 0)
+        ) {
+      alert(
+        Object.keys(errors)
+              .filter(k => errors[k].length > 0)
+              .map(k => errors[k]))
+      return
     }
+    this.__getModifiedQuestions()
+      .filter(ml => ml.label_name && !!ml.label_name.trim())
+      .map(ml => this.__modifyQuestion(ml))
   }
-  selectRender(field_name) => (value, record) => {
-    
+
+  addQuestion = () => {
+    this.setState(({questions, columns}) => {
+      let question = {}
+      columns.forEach(x => question[x.dataIndex] = "")
+      return {
+        questions: questions.concat([question])
+      }
+    })
   }
+
+  addQuestion = () => {
+    this.setState(prevState => ({
+      questions: prevState.questions.concat(
+        [{...this.props.defaultQuestionFields, label_name: "", key: getNewKey()}]
+      )
+    }))
+  }
+
+  removeQuestions = () => {
+    let { checked_questions } = this.state
+    checked_questions
+      && window.confirm('确定要删除这些记录吗？')
+      && checked_questions.filter(x => !x.id).map(label => {
+           this.setState(({ questions }) => {
+             return {
+               questions: questions.filter(l => !labelSemanticEq(l, label))
+             }
+           })
+         })
+      && checked_questions.filter(x => x.id).map(question => {
+          client.mutate({
+            mutation: gql`
+              mutation DeleteQuestion($id: ID!) {
+                delete_question(id: $id) {
+                  status
+                }
+              }
+            `,
+            variables: question,
+          }).then(({ data: { delete_question: { status }}})=> {
+            console.log('deleteQuestion: ', status);
+
+            this.setState(({ origin_questions, questions, checked_questions }) => ({
+              origin_questions: origin_questions.filter(x => x.id !== question.id),
+              questions: questions.filter(x => x.id !== question.id),
+              checked_questions: checked_questions.filter(x => x.id !== question.id),
+            }))
+          })
+        })
+  }
+
+  exportQuestions = () => {console.log('exportQuestions');}
+
+  __modifyQuestion = (question) => {
+    client.mutate({
+      mutation: gql`
+        mutation ModifyQuestion(
+            $id: Int
+            $question_index: Int!
+            $title_ident: String!
+            $content_level_1: String!
+            $content_level_2: String!
+            $skill_level_1: String!
+          ) {
+          change_question(
+            id: $id
+            question_index: $question_index
+            title_ident: $title_ident
+            content_level_1: $content_level_1
+            content_level_2: $content_level_2
+            skill_level_1: $skill_level_1
+          ) {
+            question {
+              id
+              question_index
+              title_ident
+              content_level_1
+              content_level_2
+              skill_level_1
+            }
+          }
+        }
+      `,
+      variables: question,
+    }).then(({ data: { change_question: { question }}})=> {
+      console.log('__modifyQuestion: ', question);
+      this.setState(({ originQuestions, questions }) => {
+        return {
+          originQuestions: originQuestions.find(x => labelSemanticEq(x, question))
+            ? originQuestions.map(x => x.id === question.id ? question : x)
+            : originQuestions.concat([question]),
+          questions: questions.map(x => labelSemanticEq(x, question) ? question : x)
+        }
+      })
+    })
+  }
+
+  __getModifiedQuestions = () => {
+    let that = this
+    return this.getQuestions().filter(x => {
+      if (x.id === undefined) {
+        return true;
+      } else {
+        let res = that.state.originQuestions.find(y => {
+          return (x.id === y.id && !labelSemanticEq(x, y))
+        })
+        console.log('res: ', res)
+        return !!res
+      }
+    })
+  }
+}
+
+class Questions extends QuestionsBase {
+  state = {
+    questions: [],
+    questions_options: [],
+    columns: [
+      { title: "问题序号", dataIndex: 'question_index',
+        render: (text, record) => <Input size='small' value={text} onChange={handleQuestionFieldChange('question_index')}/>
+      },
+      { title: "微技能一级标签", dataIndex: 'skill_level_1', },
+      { title: "微技能二级标签", dataIndex: 'skill_level_2', },
+      { title: "内容一级标签", dataIndex: 'content_level_1', },
+      { title: "内容二级标签", dataIndex: 'content_level_2', }
+    ],
+    origin_questions: [],
+  }
+
+  constructor (props) {
+    super(props)
+    client.query(labels_query_params()).then(({data: {gp_labels}}) => {
+      this.setState({ gp_labels })
+    })
+  }
+
   render () {
-    return <div>
-      Questions
+    let {questions, questions_options, gp_labels} = this.state
+    let that = this
+    let columns = this.state.columns.map(x => {
+      return x.render 
+        ? x
+        : {
+          ...x,
+          render: (value, question) => {
+            let gp_label = gp_labels ? gp_labels.find(x => x.id === value) : undefined
+            let _value = gp_label ? {key: gp_label.id, label: gp_label.label_name} : undefined
+
+            let question_options = questions_options[questions.indexOf(question)]
+            question_options = question_options ? question_options : {}
+            let field = {
+              onFocus: on_search_of_field(that, x.dataIndex, question, questions),
+              onSearch: on_search_of_field(that, x.dataIndex, question, questions),
+              onChange: on_change_of_field(that, x.dataIndex, question, questions),
+              options: question_options[x.dataIndex] ? question_options[x.dataIndex] : [],
+              value: _value ? _value : undefined,
+              fetching: false,
+              type: 'select-dynamic',
+            }
+            return _getProperContent(field)
+          }
+        }
+    })
+    return  (
+    <div>
+      <Row>
+        <Col span={5} style={{ textAlign: 'right' }}>
+          <Button type="primary" onClick={this.saveQuestions}>保存</Button>
+        </Col>
+        <Col span={5} style={{ textAlign: 'right' }}>
+          <Button type="primary" onClick={this.removeQuestions}>删除</Button>
+        </Col>
+        <Col span={5} style={{ textAlign: 'right' }}>
+          <Button type="primary" onClick={this.addQuestion}>新增</Button>
+        </Col>
+      </Row>
+        
+      <Table dataSource={this.state.questions} columns={columns} rowSelection={this.rowSelection}
+        style={{background: '#fff', padding: '20px 0px' }} />
     </div>
+    )
   }
 }
 
@@ -498,17 +633,17 @@ class Title extends React.Component {
     let {title_url, discourse, questions} = this.state
     return (
       <Row style={{width: "100%", height: "100%"}}>
-        <Col span={12}>
-          <iframe src={title_url} style={{width: "100%", height: "100%"}}/>
-        </Col>
-        <Col span={12}>
+        <Col span={24}>
             <h1>{match.params.title_ident}</h1>
-          <WrapedDiscoure discourse={discourse}/>
           <Questions questions={questions}/>
+          <WrapedDiscoure discourse={discourse}/>
         </Col>
       </Row>
     )
   }
 }
 
+//        <Col span={12}>
+//          <iframe src={title_url} style={{width: "100%", height: "100%"}}/>
+//        </Col>
 export default withApollo(withRouter(Title))
