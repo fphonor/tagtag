@@ -105,9 +105,7 @@ class LabelsBase extends React.Component {
     }
     this.__getModifiedLabels()
       .filter(ml => ml.label_name && !!ml.label_name.trim())
-      .map(ml => {
-        ml.id ? this.__modifyLabel(ml) : this.__createLabel(ml)
-      })
+      .map(ml => this.__modifyLabel(ml))
   }
 
   addLabel = () => {
