@@ -325,14 +325,15 @@ class Questions extends QuestionsBase {
     questions: [],
     questions_options: [],
     columns: [
-      { title: "问题序号", dataIndex: 'question_index',
-        render: (text, record) => <Input size='small' value={text} onChange={handleQuestionFieldChange('question_index')}/>
-      },
+      { title: "问题序号", dataIndex: 'question_index', },
       { title: "微技能一级标签", dataIndex: 'skill_level_1', },
       { title: "微技能二级标签", dataIndex: 'skill_level_2', },
       { title: "内容一级标签", dataIndex: 'content_level_1', },
       { title: "内容二级标签", dataIndex: 'content_level_2', }
     ],
+    column_renders: {
+      question_index: handleQFieldChange => (text, record) => <Input size='small' value={text} onChange={handleQFieldChange('question_index', record)}/>
+    },
     origin_questions: [],
   }
 
@@ -343,12 +344,20 @@ class Questions extends QuestionsBase {
     })
   }
 
+  handleQFieldChange = (dataIndex, question) => ({target: {value}}) => {
+    console.log('handleQFieldChange', dataIndex, question, value)
+    this.setState(({ questions }) => ({
+      questions: questions.map(x => x === question ? {...x, [dataIndex]: value} : x)
+    }))
+  }
+
   render () {
     let {questions, questions_options, gp_labels} = this.state
     let that = this
-    let columns = this.state.columns.map(x => {
-      return x.render 
-        ? x
+    let {columns, column_renders} = this.state
+    let _columns = columns.map(x => {
+      let pr = column_renders[x.dataIndex]
+      return pr ? {...x, render: pr(this.handleQFieldChange)}
         : {
           ...x,
           render: (value, question) => {
@@ -372,6 +381,9 @@ class Questions extends QuestionsBase {
     })
     return  (
     <div>
+      <Table dataSource={this.state.questions} columns={_columns} rowSelection={this.rowSelection}
+        style={{background: '#fff', padding: '20px 0px' }} pagination={false}/>
+
       <Row>
         <Col span={5} style={{ textAlign: 'right' }}>
           <Button type="primary" onClick={this.saveQuestions}>保存</Button>
@@ -383,9 +395,6 @@ class Questions extends QuestionsBase {
           <Button type="primary" onClick={this.addQuestion}>新增</Button>
         </Col>
       </Row>
-        
-      <Table dataSource={this.state.questions} columns={columns} rowSelection={this.rowSelection}
-        style={{background: '#fff', padding: '20px 0px' }} />
     </div>
     )
   }
