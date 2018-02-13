@@ -62,13 +62,14 @@ class Query(graphene.ObjectType):
         url = 'http://54.223.130.63:5000/getEsInfo'
         resp = requests.post(url, data=kwargs)
         res = resp.json()['result']
+        return Title.objects.filter(title_ident__in=[x['title_ident'] for x in res])
         import pdb; pdb.set_trace()
-        for r in res:
-            r.pop('discourse_tag_user')
-            r.pop('discourse_review_user')
-            r.pop('tag_status')
-            r.pop('review_status')
-        return [Title(**r) for r in res]
+        # for r in res:
+        #     r.pop('discourse_tag_user')
+        #     r.pop('discourse_review_user')
+        #     r.pop('tag_status')
+        #     r.pop('review_status')
+        # return [Title(**r) for r in res]
 
     def resolve_questions(self, info, **kwargs):
         return Question.objects.all()

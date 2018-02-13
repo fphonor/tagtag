@@ -144,6 +144,4 @@ class DeleteLabel(graphene.Mutation):
 
 
 class Mutation(graphene.ObjectType):
-    create_label = CreateLabel.Field()
-    modify_label = ModifyLabel.Field()
     create_course = CreateCourse.Field()

@@ -209,19 +209,11 @@ class Question(models.Model):
     def title(self):
         return Title.objects.get(title_ident=self.title_ident)
 
-    question_index = models.CharField(max_length=10, verbose_name="问题序号", null=True)
-    content_level_1 = models.ForeignKey(
-        Label, related_name='questions_c1', on_delete=models.deletion.DO_NOTHING,
-        verbose_name="内容一级标签", null=True,)
-    content_level_2 = models.ForeignKey(
-        Label, related_name='questions_c2', on_delete=models.deletion.DO_NOTHING,
-        verbose_name="内容二级标签", null=True,)
-    skill_level_1 = models.ForeignKey(
-        Label, related_name='questions_s1', on_delete=models.deletion.DO_NOTHING,
-        verbose_name="微技能一级标签", null=True,)
-    skill_level_2 = models.ForeignKey(
-        Label, related_name='questions_s2', on_delete=models.deletion.DO_NOTHING,
-        verbose_name="微技能二级标签", null=True,)
+    question_index = models.IntegerField(null=False)
+    content_level_1 = models.CharField(max_length=10, verbose_name="内容一级标签", null=True,)
+    content_level_2 = models.CharField(max_length=10, verbose_name="内容二级标签", null=True,)
+    skill_level_1 = models.CharField(max_length=10, verbose_name="微技能一级标签", null=True,)
+    skill_level_2 = models.CharField(max_length=10, verbose_name="微技能二级标签", null=True,)
 
     class Meta:
         db_table = 'question_detail'
