@@ -244,10 +244,10 @@ class QuestionsBase extends React.Component {
     } else {
       let { change_question: { question } } = data
       console.log('__modifyQuestion: ', question)
-      this.setState(({ originQuestions, questions }) => ({
-        originQuestions: originQuestions.find(x => questionSemanticEq(x, question))
-          ? originQuestions.map(x => x.id === question.id ? question : x)
-          : originQuestions.concat([question]),
+      this.setState(({ origin_questions, questions }) => ({
+        origin_questions: origin_questions.find(x => questionSemanticEq(x, question))
+          ? origin_questions.map(x => x.id === question.id ? question : x)
+          : origin_questions.concat([question]),
         questions: questions.map(x => questionSemanticEq(x, question) ? question : x)
       }))
     }
@@ -259,7 +259,7 @@ class QuestionsBase extends React.Component {
       if (x.id === undefined) {
         return true;
       } else {
-        let res = that.state.originQuestions.find(y => {
+        let res = that.state.origin_questions.find(y => {
           return (x.id === y.id && !questionSemanticEq(x, y))
         })
         console.log('res: ', res)
