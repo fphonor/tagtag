@@ -1,6 +1,10 @@
 import graphene
 import utils
+import itertools
 import requests
+
+from account.utils import get_user
+from .es import update_question_status
 
 
 class Course(graphene.ObjectType):
@@ -322,6 +326,278 @@ class ChangeTitle(graphene.Mutation):
         return _mutate(ChangeTitle, "title", table_name, Title, kwargs, info)
 
 
+class PushTitle(graphene.Mutation):
+    status = graphene.String()
+
+    class Arguments:
+        title_ident = graphene.String()
+
+    def mutate(self, info, title_ident):
+        user = get_user(info)
+        conn = utils.get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                update title_bank
+                set label_tag_user = %(username)s,
+                    label_tag_status = '已标注'
+                where title_ident = %(title_ident)s
+                and label_tag_status != '已标注'
+                ''',
+                dict(title_ident=title_ident, username=user.username)
+            )
+            # if cur.rowcount != 1:
+            #     raise Exception('没有成功更新 title_bank 记录状态')
+
+            conn.commit()
+
+        res = update_question_status_to_es(title_ident)
+        return PushTitle(status=res['result'])
+
+
+def update_question_status_to_es(title_ident):
+    with utils.get_conn().cursor() as cur:
+        title = get_title(title_ident)
+        cur.execute(
+            'select * from question_detail where title_ident=%(title_ident)s', 
+            dict(title_ident=title_ident)
+        )
+        rows = cur.fetchall()
+        questions = [dict(zip([c.name for c in cur.description], r)) for r in rows]
+        IMPORTANT_FIELDS = [
+            'skill_level_1',
+            'skill_level_2',
+            'content_level_1',
+            'content_level_2',
+        ]
+        label_ids = set(itertools.chain(*map(lambda x: map(lambda f: x[f], IMPORTANT_FIELDS), questions)))
+        labels = get_labels(label_ids)
+
+        def update_question_tags(question, field):
+            label_id = question.get(field)
+            label = next(filter(lambda x: x.id == int(label_id), labels), None)
+            question[field] = label.label_name if label else ""
+
+        for question in questions:
+            for field in IMPORTANT_FIELDS:
+                update_question_tags(question, field)
+
+        updateMap = dict(
+            # 必传参数
+            title_ident=title_ident,
+            label_tag_status=title.label_tag_status,
+            label_tag_user=title.label_tag_user,
+            questionDetail=questions,
+        )
+        if title.label_review_status and title.label_review_user:
+            # 点击 评审通过 按钮时，传入如下参数：
+            updateMap["label_review_status"] = title.label_review_status
+            updateMap["label_review_user"] = title.label_review_user
+        res = update_question_status(updateMap)
+        return res
+
+
+class PassQuestionDetailReview(graphene.Mutation):
+    status = graphene.String()
+
+    class Arguments:
+        title_ident = graphene.String()
+
+    def mutate(self, info, title_ident):
+        user = get_user(info)
+        # if user.role != 'manager':
+        #     raise Exception('您没有评审权限')
+        conn = utils.get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                update title_bank
+                set label_review_user = %(username)s,
+                    label_review_status = '评审通过'
+                where title_ident = %(title_ident)s
+                ''',
+                # and label_review_status != '评审通过'
+                dict(title_ident=title_ident, username=user.username)
+            )
+            # if cur.rowcount != 1:
+            #     raise Exception('没有成功更新 title_bank 记录状态')
+
+            conn.commit()
+
+        res = update_question_status_to_es(title_ident)
+        return PassQuestionDetailReview(status=res['result'])
+
+
+class NotPassQuestionDetailReview(graphene.Mutation):
+    status = graphene.String()
+
+    class Arguments:
+        title_ident = graphene.String()
+        review_fail_reason = graphene.String()
+
+    def mutate(self, info, title_ident, review_fail_reason):
+        user = get_user(info)
+        # if user.role != 'manager':
+        #     raise Exception('您没有评审权限')
+        conn = utils.get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                update title_bank
+                set label_review_user = %(username)s,
+                    label_review_status = '评审未通过',
+                    review_fail_reason = %(review_fail_reason)s
+                where title_ident = %(title_ident)s
+                ''',
+                dict(
+                    title_ident=title_ident,
+                    review_fail_reason=review_fail_reason,
+                    username=user.username,
+                )
+            )
+            if cur.rowcount != 1:
+                raise Exception('没有成功更新 title_bank 记录状态')
+
+            conn.commit()
+
+        res = update_question_status_to_es(title_ident)
+        return PassQuestionDetailReview(status=res['result'])
+
+
+def update_discourse_status_to_es(discourse_code):
+    with utils.get_conn().cursor() as cur:
+        cur.execute(
+            'select * from discourse_quata where discourse_code=%(discourse_code)s', 
+            dict(discourse_code=discourse_code)
+        )
+        row = cur.fetchone()
+        discourse = dict(zip([c.name for c in cur.description], row))
+
+        updateMap = dict(
+            # 必传参数
+            discourse_code=discourse_code,
+            label_tag_status=discourse.label_tag_status,
+            label_tag_user=discourse.label_tag_user,
+        )
+        if title.label_review_status and title.label_review_user:
+            # 点击 评审通过 按钮时，传入如下参数：
+            updateMap["label_review_status"] = title.label_review_status
+            updateMap["label_review_user"] = title.label_review_user
+        res = update_question_status(updateMap)
+        return res
+
+
+class PassDiscourseReview(graphene.Mutation):
+    status = graphene.String()
+
+    class Arguments:
+        discourse_code = graphene.String()
+
+    def mutate(self, info, discourse_code):
+        user = get_user(info)
+        # if user.role != 'manager':
+        #     raise Exception('您没有评审权限')
+        conn = utils.get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                update discourse_quata 
+                set discourse_review_user = %(username)s,
+                    review_status = '评审通过'
+                where discourse_code = %(discourse_code)s
+                ''',
+                # and label_review_status != '评审通过'
+                dict(discourse_code=discourse_code, username=user.username)
+            )
+            # if cur.rowcount != 1:
+            #     raise Exception('没有成功更新 title_bank 记录状态')
+
+            conn.commit()
+
+        res = update_discourse_status_to_es(discourse_code)
+        return PassQuestionDetailReview(status=res['result'])
+
+
+class NotPassDiscourseDetailReview(graphene.Mutation):
+    status = graphene.String()
+
+    class Arguments:
+        discourse_code = graphene.String()
+        review_fail_reason = graphene.String()
+
+    def mutate(self, info, discourse_code, review_fail_reason):
+        user = get_user(info)
+        # if user.role != 'manager':
+        #     raise Exception('您没有评审权限')
+        conn = utils.get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                update title_bank
+                set discourse_review_user = %(username)s,
+                    review_status = '评审未通过',
+                    review_fail_reason = %(review_fail_reason)s
+                where discourse_code = %(discourse_code)s
+                ''',
+                dict(
+                    discourse_code=discourse_code,
+                    review_fail_reason=review_fail_reason,
+                    username=user.username,
+                )
+            )
+            if cur.rowcount != 1:
+                raise Exception('没有成功更新 title_bank 记录状态')
+
+            conn.commit()
+
+        res = update_discourse_status_to_es(discourse_code)
+        return PassQuestionDetailReview(status=res['result'])
+
+
+class ChangeCourse(graphene.Mutation):
+    course = graphene.Field(Course)
+
+    class Arguments:
+        course_id = graphene.String()
+        course_name = graphene.String()
+        course_ch_name = graphene.String()
+        unit_num = graphene.Int()
+
+    def mutate(self, info, **kwargs):
+        table_name = 'course_info'
+        return _mutate(ChangeCourse, "course", table_name, Course, kwargs, info)
+
+
+def get_title(title_ident):
+    with utils.get_conn().cursor() as cur:
+        cur.execute(
+            '''
+            select *
+            from {table_name}
+            where title_ident = %(title_ident)s
+            '''.format(**dict(table_name='title_bank')),
+            dict(title_ident=title_ident)
+        )
+        rows = cur.fetchall()
+        dicts = [dict(zip([c.name for c in cur.description], row)) for row in rows]
+        return [Title(**d) for d in dicts][0]
+
+
+def get_labels(label_ids):
+    with utils.get_conn().cursor() as cur:
+        cur.execute(
+            '''
+            select *
+            from {table_name}
+            where id in %(label_ids)s
+            '''.format(**dict(table_name='label_dict')),
+            dict(label_ids=tuple(label_ids))
+        )
+        rows = cur.fetchall()
+        dicts = [dict(zip([c.name for c in cur.description], row)) for row in rows]
+        return [Label(**d) for d in dicts]
+
+
 class ChangeQuestion(graphene.Mutation):
     question = graphene.Field(Question)
 
@@ -335,8 +611,11 @@ class ChangeQuestion(graphene.Mutation):
         skill_level_2 = graphene.String()
 
     def mutate(self, info, **kwargs):
+        user = get_user(info)     # noqa
+        title = get_title(kwargs.get('title_ident'))  # noqa
         table_name = 'question_detail'
-        return _mutate(ChangeQuestion, "question", table_name, Question, kwargs, info)
+        res = _mutate(ChangeQuestion, "question", table_name, Question, kwargs, info)
+        return res
 
 
 class DeleteQuestion(graphene.Mutation):
@@ -404,11 +683,11 @@ class ChangeDiscourse(graphene.Mutation):
         return _mutate(ChangeDiscourse, 'discourse', table_name, Discourse, kwargs, info)
 
 
-def _mutate(MutationClass, res_field_name, table_name, Class, kwargs, info):
+def _mutate(MutationClass, res_field_name, table_name, Class, kwargs, info, pk='id'):
     conn = utils.get_conn()
     with conn.cursor() as cur:
         columns = kwargs.keys()
-        record_id = kwargs.get('id')
+        record_id = kwargs.get(pk)
         if not record_id:
             cur.execute(
                 '''
@@ -424,11 +703,21 @@ def _mutate(MutationClass, res_field_name, table_name, Class, kwargs, info):
                 kwargs
             )
         else:
+            # cur.execute(
+            #     ''' 
+            #         select *
+            #         from {table_name}
+            #         where {pk}=%({pk})s
+            #     '''.format(pk=pk, table_name=table_name),
+            #     kwargs
+            # )
+            # row = cur.fetchone()
+
             cur.execute(
                 '''
                 update {table_name}
                 set {columns}
-                where id=%(id)s
+                where {pk}=%({pk})s
                 '''.format(**dict(
                     table_name=table_name,
                     columns=',\n'.join(
@@ -436,7 +725,8 @@ def _mutate(MutationClass, res_field_name, table_name, Class, kwargs, info):
                             lambda x: '{0} = %({0})s'.format(x),
                             columns
                         )
-                    )
+                    ),
+                    pk=pk,
                 )),
                 kwargs
             )
@@ -450,6 +740,9 @@ def _mutate(MutationClass, res_field_name, table_name, Class, kwargs, info):
             kwargs
         )
         row = cur.fetchone()
+        print({
+            res_field_name: Class(**dict(zip([c.name for c in cur.description], row)))
+        })
         return MutationClass(
             **{
                 res_field_name: Class(**dict(zip([c.name for c in cur.description], row)))
@@ -475,10 +768,14 @@ def delete_mutate(MutationClass, table_name, Class, kwargs, info):
         conn.commit()
         return MutationClass(status="ok")
 
+
 class Mutation(graphene.ObjectType):
     change_title = ChangeTitle.Field()
+    push_title = PushTitle.Field()
     change_label = ChangeLabel.Field()
     delete_label = DeleteLabel.Field()
     change_question = ChangeQuestion.Field()
     delete_question = DeleteQuestion.Field()
+    pass_question_detail_review = PassQuestionDetailReview.Field()
+    not_pass_question_detail_review = NotPassQuestionDetailReview.Field()
     change_discourse = ChangeDiscourse.Field()
