@@ -1,10 +1,9 @@
 import graphene
 import utils
 import itertools
-import requests
 
 from account.utils import get_user
-from .es import update_question_status
+from .es import update_question_status, update_discourse_status
 
 
 class Course(graphene.ObjectType):
@@ -27,29 +26,30 @@ class Discourse(graphene.ObjectType):
     id = graphene.Int()
     discourse_code = graphene.String()
     discourse = graphene.String()
-    ls_domain = graphene.String()
-    re_domain = graphene.String()
-    ls_genre = graphene.String()
-    re_genre = graphene.String()
-    ls_activity_type = graphene.String()
-    ls_authenticity = graphene.String()
     word_num = graphene.Int()
     avg_syllable_num = graphene.Float()
     lemma_num = graphene.Int()
     family_num = graphene.Int()
     common_rate = graphene.Float()
     academic_rate = graphene.Float()
+    ls_domain = graphene.String()
+    ls_genre = graphene.String()
+    ls_activity_type = graphene.String()
+    ls_authenticity = graphene.String()
     ls_audio_type = graphene.String()
     ls_audio_all_time = graphene.Float()
     ls_audio_real_time = graphene.Float()
     ls_speed = graphene.Int()
     ls_speed_type = graphene.String()
+    ls_speed_syllable = graphene.Float()
     ls_voice_type = graphene.String()
+    re_domain = graphene.String()
+    re_genre = graphene.String()
     re_familiarity = graphene.Int()
     re_is_chart = graphene.String()
+    re_flesch_kincaid_grade_level = graphene.Float()
     sentence_num = graphene.Int()
     avg_words_per_sent = graphene.Float()
-    re_flesch_kincaid_grade_level = graphene.Float()
     compound_sent_semantic_exten_num = graphene.Int()
     compound_sent_adversative_num = graphene.Int()
     compound_sent_select_num = graphene.Int()
@@ -61,7 +61,6 @@ class Discourse(graphene.ObjectType):
     discourse_review_user = graphene.String()
     review_status = graphene.String()
     review_fail_reason = graphene.String()
-    ls_speed_syllable = graphene.Float()
 
 
 class Question(graphene.ObjectType):
@@ -222,9 +221,12 @@ class Query(graphene.ObjectType):
             return [Title(**d) for d in dicts][0]
 
     def resolve_gp_titles(self, info, title_ident__in=None, **kwargs):
-        url = 'http://54.223.130.63:5000/getEsInfo'
-        resp = requests.post(url, data=kwargs).json()
-        es_rows = resp['result']
+        # url = 'http://54.223.130.63:5000/getEsInfo'
+        # import requests
+        # resp = requests.post(url, data=kwargs).json()
+        # es_rows = resp['result']
+        resp = {'total_num': 2, 'page_size': 3, 'page_num': 1}
+        es_rows = [{'title_ident': 'u3_2'}, {'title_ident': 'u3_8'}, ]
         with utils.get_conn().cursor() as cur:
             if not es_rows:
                 return TitleList(
@@ -326,35 +328,6 @@ class ChangeTitle(graphene.Mutation):
         return _mutate(ChangeTitle, "title", table_name, Title, kwargs, info)
 
 
-class PushTitle(graphene.Mutation):
-    status = graphene.String()
-
-    class Arguments:
-        title_ident = graphene.String()
-
-    def mutate(self, info, title_ident):
-        user = get_user(info)
-        conn = utils.get_conn()
-        with conn.cursor() as cur:
-            cur.execute(
-                '''
-                update title_bank
-                set label_tag_user = %(username)s,
-                    label_tag_status = '已标注'
-                where title_ident = %(title_ident)s
-                and label_tag_status != '已标注'
-                ''',
-                dict(title_ident=title_ident, username=user.username)
-            )
-            # if cur.rowcount != 1:
-            #     raise Exception('没有成功更新 title_bank 记录状态')
-
-            conn.commit()
-
-        res = update_question_status_to_es(title_ident)
-        return PushTitle(status=res['result'])
-
-
 def update_question_status_to_es(title_ident):
     with utils.get_conn().cursor() as cur:
         title = get_title(title_ident)
@@ -395,6 +368,35 @@ def update_question_status_to_es(title_ident):
             updateMap["label_review_user"] = title.label_review_user
         res = update_question_status(updateMap)
         return res
+
+
+class PushTitle(graphene.Mutation):
+    status = graphene.String()
+
+    class Arguments:
+        title_ident = graphene.String()
+
+    def mutate(self, info, title_ident):
+        user = get_user(info)
+        conn = utils.get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                update title_bank
+                set label_tag_user = %(username)s,
+                    label_tag_status = '已标注'
+                where title_ident = %(title_ident)s
+                and label_tag_status != '已标注'
+                ''',
+                dict(title_ident=title_ident, username=user.username)
+            )
+            # if cur.rowcount != 1:
+            #     raise Exception('没有成功更新 title_bank 记录状态，可能记录已标注')
+
+            conn.commit()
+
+        res = update_question_status_to_es(title_ident)
+        return PushTitle(status=res['result'])
 
 
 class PassQuestionDetailReview(graphene.Mutation):
@@ -473,18 +475,75 @@ def update_discourse_status_to_es(discourse_code):
         row = cur.fetchone()
         discourse = dict(zip([c.name for c in cur.description], row))
 
-        updateMap = dict(
-            # 必传参数
-            discourse_code=discourse_code,
-            label_tag_status=discourse.label_tag_status,
-            label_tag_user=discourse.label_tag_user,
-        )
-        if title.label_review_status and title.label_review_user:
-            # 点击 评审通过 按钮时，传入如下参数：
-            updateMap["label_review_status"] = title.label_review_status
-            updateMap["label_review_user"] = title.label_review_user
-        res = update_question_status(updateMap)
+        updateMap = dict()
+
+        # 必传参数
+        for f in [
+            "discourse_code",
+            "tag_status",
+            "discourse_tag_user",
+        ]:
+            updateMap[f] = discourse[f]
+
+        READ_FIELDS = [
+            "re_domain",
+            "re_familiarity",
+            "re_genre",
+            "re_is_chart",
+            "re_flesch_kincaid_grade_level",
+        ]
+        # 若是阅读：
+        if all(map(lambda f: discourse[f], READ_FIELDS)):
+            for f in READ_FIELDS:
+                updateMap[f] = discourse[f]
+        LISTEN_FIELDS = [
+            "ls_domain",
+            "ls_activity_type",
+            "ls_genre",
+            "ls_authenticity",
+            "ls_voice_type",
+        ]
+        # 若是听力：,
+        if all(map(lambda f: discourse[f], LISTEN_FIELDS)):
+            for f in LISTEN_FIELDS:
+                updateMap[f] = discourse[f]
+
+        # 点击 评审通过 按钮时，传入如下参数：
+        REVIEW_FIELDS = ["review_status", "discourse_review_user", ]
+        if all(map(lambda f: discourse[f], REVIEW_FIELDS)):
+            for f in REVIEW_FIELDS:
+                updateMap[f] = discourse[f]
+        res = update_discourse_status(updateMap)
         return res
+
+
+class PushDiscourse(graphene.Mutation):
+    status = graphene.String()
+
+    class Arguments:
+        discourse_code = graphene.String()
+
+    def mutate(self, info, discourse_code):
+        user = get_user(info)
+        conn = utils.get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                update discourse_quata
+                set discourse_tag_user = %(username)s,
+                    tag_status = '已标注'
+                where discourse_code = %(discourse_code)s
+                and tag_status != '已标注'
+                ''',
+                dict(discourse_code=discourse_code, username=user.username)
+            )
+            # if cur.rowcount != 1:
+            #     raise Exception('没有成功更新 discourse_quata 记录状态，可能记录已标注')
+
+            conn.commit()
+
+        res = update_discourse_status_to_es(discourse_code)
+        return PushTitle(status=res['result'])
 
 
 class PassDiscourseReview(graphene.Mutation):
@@ -503,14 +562,14 @@ class PassDiscourseReview(graphene.Mutation):
                 '''
                 update discourse_quata 
                 set discourse_review_user = %(username)s,
-                    review_status = '评审通过'
+                    review_status = '评审通过',
                 where discourse_code = %(discourse_code)s
                 ''',
                 # and label_review_status != '评审通过'
-                dict(discourse_code=discourse_code, username=user.username)
+                dict(discourse_code=discourse_code, username=user.username,)
             )
-            # if cur.rowcount != 1:
-            #     raise Exception('没有成功更新 title_bank 记录状态')
+            if cur.rowcount != 1:
+                raise Exception('没有成功更新 discourse_quata 记录状态')
 
             conn.commit()
 
@@ -518,7 +577,7 @@ class PassDiscourseReview(graphene.Mutation):
         return PassQuestionDetailReview(status=res['result'])
 
 
-class NotPassDiscourseDetailReview(graphene.Mutation):
+class NotPassDiscourseReview(graphene.Mutation):
     status = graphene.String()
 
     class Arguments:
@@ -533,7 +592,7 @@ class NotPassDiscourseDetailReview(graphene.Mutation):
         with conn.cursor() as cur:
             cur.execute(
                 '''
-                update title_bank
+                update discourse_quata
                 set discourse_review_user = %(username)s,
                     review_status = '评审未通过',
                     review_fail_reason = %(review_fail_reason)s
@@ -546,7 +605,7 @@ class NotPassDiscourseDetailReview(graphene.Mutation):
                 )
             )
             if cur.rowcount != 1:
-                raise Exception('没有成功更新 title_bank 记录状态')
+                raise Exception('没有成功更新 discourse_quata 记录状态')
 
             conn.commit()
 
@@ -639,44 +698,39 @@ class ChangeDiscourse(graphene.Mutation):
     discourse = graphene.Field(Discourse)
 
     class Arguments:
-        id = graphene.Int()
-        discourse_code = graphene.String()
-        discourse = graphene.String()
-        ls_domain = graphene.String()
-        re_domain = graphene.String()
-        ls_genre = graphene.String()
-        re_genre = graphene.String()
-        ls_activity_type = graphene.String()
-        ls_authenticity = graphene.String()
-        word_num = graphene.Int()
-        avg_syllable_num = graphene.Float()
-        lemma_num = graphene.Int()
-        family_num = graphene.Int()
-        common_rate = graphene.Float()
         academic_rate = graphene.Float()
-        ls_audio_type = graphene.String()
-        ls_audio_all_time = graphene.Float()
-        ls_audio_real_time = graphene.Float()
-        ls_speed = graphene.Int()
-        ls_speed_type = graphene.String()
-        ls_voice_type = graphene.String()
-        re_familiarity = graphene.Int()
-        re_is_chart = graphene.String()
-        sentence_num = graphene.Int()
-        avg_words_per_sent = graphene.Float()
-        re_flesch_kincaid_grade_level = graphene.Float()
-        compound_sent_semantic_exten_num = graphene.Int()
-        compound_sent_adversative_num = graphene.Int()
-        compound_sent_select_num = graphene.Int()
-        noun_clauses_num = graphene.Int()
         adjectival_clause_num = graphene.Int()
         adverbial_clauses_num = graphene.Int()
-        discourse_tag_user = graphene.String()
-        tag_status = graphene.String()
-        discourse_review_user = graphene.String()
-        review_status = graphene.String()
-        review_fail_reason = graphene.String()
+        avg_syllable_num = graphene.Float()
+        avg_words_per_sent = graphene.Float()
+        common_rate = graphene.Float()
+        compound_sent_adversative_num = graphene.Int()
+        compound_sent_select_num = graphene.Int()
+        compound_sent_semantic_exten_num = graphene.Int()
+        discourse = graphene.String()
+        discourse_code = graphene.String()
+        family_num = graphene.Int()
+        id = graphene.Int()
+        lemma_num = graphene.Int()
+        ls_activity_type = graphene.String()
+        ls_audio_all_time = graphene.Float()
+        ls_audio_real_time = graphene.Float()
+        ls_audio_type = graphene.String()
+        ls_authenticity = graphene.String()
+        ls_domain = graphene.String()
+        ls_genre = graphene.String()
+        ls_speed = graphene.Int()
         ls_speed_syllable = graphene.Float()
+        ls_speed_type = graphene.String()
+        ls_voice_type = graphene.String()
+        noun_clauses_num = graphene.Int()
+        re_domain = graphene.String()
+        re_familiarity = graphene.Int()
+        re_flesch_kincaid_grade_level = graphene.Float()
+        re_genre = graphene.String()
+        re_is_chart = graphene.String()
+        sentence_num = graphene.Int()
+        word_num = graphene.Int()
 
     def mutate(self, info, **kwargs):
         table_name = 'discourse_quata'
@@ -778,4 +832,6 @@ class Mutation(graphene.ObjectType):
     delete_question = DeleteQuestion.Field()
     pass_question_detail_review = PassQuestionDetailReview.Field()
     not_pass_question_detail_review = NotPassQuestionDetailReview.Field()
+    pass_discourse_review = PassDiscourseReview.Field()
+    not_pass_discourse_review = NotPassDiscourseReview.Field()
     change_discourse = ChangeDiscourse.Field()
