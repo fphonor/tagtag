@@ -6,6 +6,8 @@ import gql from 'graphql-tag'
 import TitleQuestions from './TitleQuestions'
 
 import { Collapse, Select, Form, Row, Col, Input, Button } from 'antd'
+import { Tabs } from 'antd';
+const TabPane = Tabs.TabPane;
 const FormItem = Form.Item
 const Option = Select.Option
 const Panel = Collapse.Panel;
@@ -19,6 +21,7 @@ class Discourse extends React.Component {
 
   constructor (props) {
     super(props)
+    debugger;
     let { discourse, title } = this.props
     this.setState({ discourse, title})
   }
@@ -381,70 +384,15 @@ class Discourse extends React.Component {
     console.log('title: ', title)
     return (
       <Form onSubmit={this.handleSubmit}>
-        <Row>
-          <Col span={12} style={{ textAlign: 'right' }}>
-            <FormItem {...formItemLayout} label="文本词数">
-              <Input value={discourse.word_num} style={{ width: 120 }} 
-                onChange={this.handleFieldChange('word_num')}
-                disabled={discourse.review_status === '评审通过'}
-              />
-            </FormItem>
-          </Col>
-          
-          <Col span={12} style={{ textAlign: 'right' }}>
-            <FormItem {...formItemLayout} label="平均音节数">
-              <Input value={discourse.avg_syllable_num} style={{ width: 120 }} 
-                onChange={this.handleFieldChange('avg_syllable_num')}
-                disabled={discourse.review_status === '评审通过'}
-              />
-            </FormItem>
-          </Col>
-          
-          <Col span={12} style={{ textAlign: 'right' }}>
-            <FormItem {...formItemLayout} label="词元数">
-              <Input value={discourse.lemma_num} style={{ width: 120 }} 
-                onChange={this.handleFieldChange('lemma_num')}
-                disabled={discourse.review_status === '评审通过'}
-              />
-            </FormItem>
-          </Col>
-          
-          <Col span={12} style={{ textAlign: 'right' }}>
-            <FormItem {...formItemLayout} label="词族数">
-              <Input value={discourse.family_num} style={{ width: 120 }} 
-                onChange={this.handleFieldChange('family_num')}
-                disabled={discourse.review_status === '评审通过'}
-              />
-            </FormItem>
-          </Col>
-          
-          <Col span={12} style={{ textAlign: 'right' }}>
-            <FormItem {...formItemLayout} label="通用词汇占比">
-              <Input value={discourse.common_rate} style={{ width: 120 }} 
-                onChange={this.handleFieldChange('common_rate')}
-                disabled={discourse.review_status === '评审通过'}
-              />
-            </FormItem>
-          </Col>
-          
-          <Col span={12} style={{ textAlign: 'right' }}>
-            <FormItem {...formItemLayout} label="学术词汇占比">
-              <Input value={discourse.academic_rate} style={{ width: 120 }} 
-                onChange={this.handleFieldChange('academic_rate')}
-                disabled={discourse.review_status === '评审通过'}
-              />
-            </FormItem>
-          </Col>
-        </Row>
-
-        <hr/>
 
         { title.title_category === '听力' &&  
         <Row>
           <Col span={12} style={{ textAlign: 'right' }}>
             <FormItem {...formItemLayout} label="听力领域">
               <Select value={discourse.ls_domain} style={{ width: 120 }} 
-                onChange={this.handleSelectFieldChange('ls_domain')}>
+                onChange={this.handleSelectFieldChange('ls_domain')}
+                disabled={discourse.review_status === '评审通过'}
+                >
                 <Option value="教育">教育</Option>
                 <Option value="职场">职场</Option>
                 <Option value="公共">公共</Option>
@@ -455,7 +403,10 @@ class Discourse extends React.Component {
           
           <Col span={12} style={{ textAlign: 'right' }}>
             <FormItem {...formItemLayout} label="听力文本体裁">
-              <Select value={discourse.ls_genre} style={{ width: 120 }} onChange={this.handleSelectFieldChange('ls_genre')}>
+              <Select value={discourse.ls_genre} style={{ width: 120 }}
+                onChange={this.handleSelectFieldChange('ls_genre')}
+                disabled={discourse.review_status === '评审通过'}
+                >
                 <Option value="议论文">议论文</Option>
                 <Option value="说明文">说明文</Option>
                 <Option value="记叙文">记叙文</Option>
@@ -466,7 +417,10 @@ class Discourse extends React.Component {
           
           <Col span={12} style={{ textAlign: 'right' }}>
             <FormItem {...formItemLayout} label="听力活动类型">
-              <Select value={discourse.ls_activity_type} style={{ width: 120 }} onChange={this.handleSelectFieldChange('ls_activity_type')}>
+              <Select value={discourse.ls_activity_type} style={{ width: 120 }}
+                onChange={this.handleSelectFieldChange('ls_activity_type')}
+                disabled={discourse.review_status === '评审通过'}
+                >
                 <Option value="独白">独白</Option>
                 <Option value="对话">对话</Option>
                 <Option value="讨论">讨论</Option>
@@ -476,7 +430,10 @@ class Discourse extends React.Component {
           
           <Col span={12} style={{ textAlign: 'right' }}>
             <FormItem {...formItemLayout} label="听力素材真实性">
-              <Select value={discourse.ls_authenticity} style={{ width: 120 }} onChange={this.handleSelectFieldChange('ls_authenticity')}>
+              <Select value={discourse.ls_authenticity} style={{ width: 120 }} 
+                onChange={this.handleSelectFieldChange('ls_authenticity')}
+                disabled={discourse.review_status === '评审通过'}
+                >
                 <Option value="真实语篇">真实语篇</Option>
                 <Option value="改编语篇">改编语篇</Option>
               </Select>
@@ -485,7 +442,10 @@ class Discourse extends React.Component {
           
           <Col span={12} style={{ textAlign: 'right' }}>
             <FormItem {...formItemLayout} label="音频类型">
-              <Select value={discourse.ls_audio_type} style={{ width: 120 }} onChange={this.handleSelectFieldChange('ls_audio_type')}>
+              <Select value={discourse.ls_audio_type} style={{ width: 120 }}
+                onChange={this.handleSelectFieldChange('ls_audio_type')}
+                disabled={discourse.review_status === '评审通过'}
+                >
                 <Option value="audio">音频</Option>
                 <Option value="video">视频</Option>
               </Select>
@@ -511,17 +471,11 @@ class Discourse extends React.Component {
           </Col>
           
           <Col span={12} style={{ textAlign: 'right' }}>
-            <FormItem {...formItemLayout} label="语速（wpm）">
-              <Input value={discourse.ls_speed} style={{ width: 120 }} 
-                onChange={this.handleFieldChange('ls_speed')}
-                disabled={discourse.review_status === '评审通过'}
-              />
-            </FormItem>
-          </Col>
-          
-          <Col span={12} style={{ textAlign: 'right' }}>
             <FormItem {...formItemLayout} label="语速（wpm）分档">
-              <Select value={discourse.ls_speed_type} style={{ width: 120 }} onChange={this.handleSelectFieldChange('ls_speed_type')}>
+              <Select value={discourse.ls_speed_type} style={{ width: 120 }}
+                onChange={this.handleSelectFieldChange('ls_speed_type')}
+                disabled={discourse.review_status === '评审通过'}
+                >
                 <Option value="快速">快速</Option>
                 <Option value="较快">较快</Option>
                 <Option value="中速">中速</Option>
@@ -542,7 +496,10 @@ class Discourse extends React.Component {
           
           <Col span={12} style={{ textAlign: 'right' }}>
             <FormItem {...formItemLayout} label="口音">
-              <Select value={discourse.ls_voice_type} style={{ width: 120 }} onChange={this.handleSelectFieldChange('ls_voice_type')}>
+              <Select value={discourse.ls_voice_type} style={{ width: 120 }}
+                onChange={this.handleSelectFieldChange('ls_voice_type')}
+                disabled={discourse.review_status === '评审通过'}
+                >
                 <Option value="澳大利亚">澳大利亚</Option>
                 <Option value="美音">美音</Option>
                 <Option value="英音">英音</Option>
@@ -694,6 +651,62 @@ class Discourse extends React.Component {
 
         <Row>
           <Col span={12} style={{ textAlign: 'right' }}>
+            <FormItem {...formItemLayout} label="文本词数">
+              <Input value={discourse.word_num} style={{ width: 120 }} 
+                onChange={this.handleFieldChange('word_num')}
+                disabled={discourse.review_status === '评审通过'}
+              />
+            </FormItem>
+          </Col>
+          
+          <Col span={12} style={{ textAlign: 'right' }}>
+            <FormItem {...formItemLayout} label="平均音节数">
+              <Input value={discourse.avg_syllable_num} style={{ width: 120 }} 
+                onChange={this.handleFieldChange('avg_syllable_num')}
+                disabled={discourse.review_status === '评审通过'}
+              />
+            </FormItem>
+          </Col>
+          
+          <Col span={12} style={{ textAlign: 'right' }}>
+            <FormItem {...formItemLayout} label="词元数">
+              <Input value={discourse.lemma_num} style={{ width: 120 }} 
+                onChange={this.handleFieldChange('lemma_num')}
+                disabled={discourse.review_status === '评审通过'}
+              />
+            </FormItem>
+          </Col>
+          
+          <Col span={12} style={{ textAlign: 'right' }}>
+            <FormItem {...formItemLayout} label="词族数">
+              <Input value={discourse.family_num} style={{ width: 120 }} 
+                onChange={this.handleFieldChange('family_num')}
+                disabled={discourse.review_status === '评审通过'}
+              />
+            </FormItem>
+          </Col>
+          
+          <Col span={12} style={{ textAlign: 'right' }}>
+            <FormItem {...formItemLayout} label="通用词汇占比">
+              <Input value={discourse.common_rate} style={{ width: 120 }} 
+                onChange={this.handleFieldChange('common_rate')}
+                disabled={discourse.review_status === '评审通过'}
+              />
+            </FormItem>
+          </Col>
+          
+          <Col span={12} style={{ textAlign: 'right' }}>
+            <FormItem {...formItemLayout} label="学术词汇占比">
+              <Input value={discourse.academic_rate} style={{ width: 120 }} 
+                onChange={this.handleFieldChange('academic_rate')}
+                disabled={discourse.review_status === '评审通过'}
+              />
+            </FormItem>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col span={12} style={{ textAlign: 'right' }}>
             <FormItem {...formItemLayout} label="语篇标注人">
               {discourse.discourse_tag_user}
             </FormItem>
@@ -744,7 +757,6 @@ class Discourse extends React.Component {
 }
 
 const TagWrappedDiscoure = Form.create()(withApollo(Discourse))
-const WrappedTitleQuestions = withApollo(TitleQuestions)
 
 class Title extends React.Component {
   state = {
@@ -860,14 +872,14 @@ class Title extends React.Component {
         </Col>
         <Col span={this.state.iframeShow ? 12 : 24}>
           <h1 onClick={this.toggleIFrame}>题目详细路径：{ title.title_detail_path }</h1>
-          <Collapse accordion defaultActiveKey="1">
-            <Panel header="语篇标注" key="1">
+          <Tabs defaultActiveKey="1">
+            <TabPane tab="语篇标注" key="1" forceRender={true}>
               <TagWrappedDiscoure title={title} discourse={discourse}/>
-            </Panel>
-            <Panel header="微技能标注" key="2">
-              <WrappedTitleQuestions title={title} questions={questions}/>
-            </Panel>
-          </Collapse>
+            </TabPane>
+            <TabPane tab="微技能标注" key="2" forceRender={true}>
+              <TitleQuestions title={title} questions={questions}/>
+            </TabPane>
+          </Tabs>
         </Col>
       </Row>
     )
