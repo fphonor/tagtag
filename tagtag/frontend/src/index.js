@@ -1,19 +1,21 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 
+import { BrowserRouter } from 'react-router-dom'
+
+import { createStore, applyMiddleware } from 'redux'
+import { Provider } from 'react-redux'
+import thunk from 'redux-thunk'
+
+import { ApolloProvider } from 'react-apollo'
+
 import './index.css'
 import App from './component/App'
 import registerServiceWorker from './registerServiceWorker'
-
-import { Provider } from 'react-redux'
-import { createStore, applyMiddleware } from 'redux'
-import thunk from 'redux-thunk'
 import reducerOfApp from './reducer'
 
-import { ApolloProvider } from 'react-apollo'
-import { client } from './graphql'
 
-import { BrowserRouter } from 'react-router-dom'
+import { client } from './graphql'
 
 
 const middleware = [ thunk ];
