@@ -27,8 +27,6 @@ class Label(models.Model):
         verbose_name='父标签ID',
         null=True,
     ) # 根节点父ID默认为0
-    date_joined= models.DateTimeField(auto_now_add=True)
-    date_modified = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'label_dict'

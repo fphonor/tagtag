@@ -65,14 +65,14 @@ const AUTO_COMPLETE_HANDLERS = {
   },
 }
 
-const _getProperContent = (field) => {
+const _getProperContent = (field, {title}) => {
   switch (field.type) {
     case 'select':
       return (
         <Select
           defaultValue={field.defaultValue || ""}
           size='small'
-          disabled={!!field.disabled}
+          disabled={title.label_review_status === '评审通过'}
           onChange={(value) => field.onChange(value)} >
           {field.options.map(o => (<Option value={o.value} key={o.value}>{o.text}</Option>))}
         </Select>
@@ -86,6 +86,7 @@ const _getProperContent = (field) => {
           labelInValue
           onBlur={field.onBlur}
           onFocus={field.onFocus}
+          disabled={title.label_review_status === '评审通过'}
           value={field.value}
           placeholder={field.placeholder || ""}
           notFoundContent={field.fetching ? <Spin size="small" /> : null}
@@ -146,7 +147,7 @@ const IMPORTANT_FIELDS = [
 
 const questionSemanticEq = (x, y) => {
   return IMPORTANT_FIELDS.every(k =>
-    x[k] === y[k]
+    ("" + x[k]) === ("" + y[k])
   )
 }
 
@@ -226,7 +227,7 @@ class QuestionsBase extends React.Component {
       `,
       variables: this.state.title,
     })
-    handleGqlResp('push_title', "保存")({data, errors})
+    handleGqlResp('push_title', "保存")({ data, errors })
   }
 
   __modifyQuestion = async (question) => {
@@ -303,7 +304,7 @@ class QuestionsBase extends React.Component {
          })
       // eslint-disable-next-line
       && Promise.all(checked_questions.filter(x => x.id).map(question => {
-          client.mutate({
+          return client.mutate({
             mutation: gql`
               mutation DeleteQuestion($id: Int!) {
                 delete_question(id: $id) {
@@ -313,7 +314,7 @@ class QuestionsBase extends React.Component {
             `,
             variables: question,
           }).then(resp => {
-            let { data: { delete_question: { status }}, errors } = resp
+            let { data: { delete_question: { status } } } = resp
             console.log('deleteQuestion: ', status, question);
 
             this.setState(({ questions, checked_questions }) => ({
@@ -325,7 +326,10 @@ class QuestionsBase extends React.Component {
         })).then(resp => {
           let data = resp.map(({data}) => data)
           let errors = resp.map(({errors}) => errors)
-          handleGqlResp('deleteQuestions', '删除')({data, errors})
+          handleGqlResp('deleteQuestions', '删除')({
+            data,
+            errors: (errors.every(x => x) && { message: errors.map(x => x.message) }) || undefined,
+          })
         })
   }
 
@@ -345,7 +349,11 @@ class TitleQuestions extends QuestionsBase {
       { title: "内容二级标签", dataIndex: 'content_level_2', }
     ],
     column_renders: {
-      question_index: handleQFieldChange => (text, record) => <Input size='small' value={text} onChange={handleQFieldChange('question_index', record)}/>
+      question_index: (handleQFieldChange, {title}) => (text, record) =>
+        <Input size='small' value={text}
+          onChange={handleQFieldChange('question_index', record)}
+          disabled={title.label_review_status === '评审通过'}
+        />
     },
   }
 
@@ -363,50 +371,115 @@ class TitleQuestions extends QuestionsBase {
     }))
   }
 
-  componentWillReceiveProps(props) {
-    this.setState(props)
+  componentWillReceiveProps({questions, title}) {
+    if (title.label_review_status === '评审通过' || (questions && questions.length)) {
+      this.setState({questions, title})
+    } else {
+      if (title && title.title_ident) {
+        for (let i = questions.length; i < 5; i++ ) {
+          let question = {title_ident: title.title_ident}
+          this.state.columns.forEach(x => question[x.dataIndex] = "")
+          questions = questions.concat([question])
+        }
+      }
+      this.setState({questions, title})
+    }
   }
 
-  passReview = () => {
-    client.mutate({
+  passReview = async () => {
+    let {data, errors} = await this.props.client.mutate({
       mutation: gql`
-        mutation passQuestionReview( $title_ident: String!) {
+        mutation passQuestionReview( $title_ident: String! ) {
           pass_question_detail_review( title_ident: $title_ident ) {
             status
+            title {
+              id
+              platform
+              title_ident
+              title_detail_path
+              title_type
+              title_course
+              title_category
+              title_info
+              title_url
+              video_path
+              version
+              discourse_code
+              block_id
+              label_tag_user
+              label_tag_status
+              label_review_user
+              label_review_status
+              review_fail_reason
+              tutorial_id
+              tutorial_name
+              unit_id
+              unit_name
+              minicoz_id
+              minicoz_name
+              task_id
+            }
           }
         }
       `,
       variables: this.state.title,
-    }).then(({data, errors}) => {
-      if (errors) {
-        alert("操作不成功: " + errors.map(x => x.message))
-        console.log('pass_question_detail_review ERROR:', errors)
-      } else {
-        alert("操作成功")
-        console.log('pass_question_detail_review OK:', data)
-      }
     })
+    if (errors) {
+      alert("操作不成功: " + errors.map(x => x.message))
+      console.log('pass_question_detail_review ERROR:', errors)
+    } else {
+      alert("操作成功")
+      console.log('pass_question_detail_review OK:', data)
+      this.setState({title: data.pass_question_detail_review.title})
+    }
   }
 
-  notPassReview = () => {
-    client.mutate({
+  notPassReview = async () => {
+    let {data, errors} = await this.props.client.mutate({
       mutation: gql`
         mutation passQuestionReview( $title_ident: String!, $review_fail_reason: String!) {
           not_pass_question_detail_review( title_ident: $title_ident, review_fail_reason: $review_fail_reason ) {
             status
+            title {
+              id
+              platform
+              title_ident
+              title_detail_path
+              title_type
+              title_course
+              title_category
+              title_info
+              title_url
+              video_path
+              version
+              discourse_code
+              block_id
+              label_tag_user
+              label_tag_status
+              label_review_user
+              label_review_status
+              review_fail_reason
+              tutorial_id
+              tutorial_name
+              unit_id
+              unit_name
+              minicoz_id
+              minicoz_name
+              task_id
+            }
           }
         }
       `,
       variables: this.state.title,
-    }).then(({data, errors}) => {
-      if (errors) {
-        alert("操作不成功: " + errors.map(x => x.message))
-        console.log('not_pass_question_detail_review ERROR:', errors)
-      } else {
-        alert("操作成功")
-        console.log('not_pass_question_detail_review OK:', data)
-      }
     })
+    if (errors) {
+      alert("操作不成功: " + errors.map(x => x.message))
+      console.log('not_pass_question_detail_review ERROR:', errors)
+    } else {
+      alert("操作成功")
+      console.log('not_pass_question_detail_review OK:', data)
+      this.setState({title: data.not_pass_question_detail_review.title})
+    }
   }
 
   handle_review_fail_reason_change = ({target: {value}}) => {
@@ -417,16 +490,16 @@ class TitleQuestions extends QuestionsBase {
   }
 
   render () {
-    let { questions, questions_options, gp_labels } = this.state
+    let { questions, questions_options, gp_labels, title } = this.state
     let that = this
     let { columns, column_renders } = this.state
     let _columns = columns.map(x => {
       let pr = column_renders[x.dataIndex]
-      return pr ? {...x, render: pr(this.handleQFieldChange)}
+      return pr ? {...x, render: pr(this.handleQFieldChange, {title})}
         : {
           ...x,
           render: (value, question) => {
-            let gp_label = gp_labels ? gp_labels.find(x => x.id === parseInt(value)) : undefined
+            let gp_label = gp_labels ? gp_labels.find(x => x.id === parseInt(value, 10)) : undefined
             let _value = gp_label ? {key: gp_label.id, label: gp_label.label_name} : undefined
 
             let question_options = questions_options[questions.indexOf(question)]
@@ -440,32 +513,37 @@ class TitleQuestions extends QuestionsBase {
               fetching: false,
               type: 'select-dynamic',
             }
-            return _getProperContent(field)
+            return _getProperContent(field, {title})
           }
         }
     })
-    let rfr = this.state.title.review_fail_reason
     return  (
       <div>
         <Table dataSource={this.state.questions} columns={_columns} rowSelection={this.rowSelection}
           style={{background: '#fff', padding: '20px 0px' }} pagination={false}/>
         <Row>
           <Col span={5} style={{ textAlign: 'right' }}>
-            <Button type="primary" onClick={this.saveQuestions}>保存</Button>
+            <Button type="primary" onClick={this.saveQuestions}
+              disabled={title.label_review_status === '评审通过'}>保存</Button>
           </Col>
           <Col span={5} style={{ textAlign: 'right' }}>
-            <Button type="primary" onClick={this.removeQuestions}>删除</Button>
+            <Button type="primary" onClick={this.removeQuestions}
+              disabled={title.label_review_status === '评审通过'}>删除</Button>
           </Col>
           <Col span={5} style={{ textAlign: 'right' }}>
-            <Button type="primary" onClick={this.addTempQuestion}>新增</Button>
+            <Button type="primary" onClick={this.addTempQuestion}
+              disabled={title.label_review_status === '评审通过'}>新增</Button>
           </Col>
           <Col span={5} style={{ textAlign: 'right' }}>
-            <Button type="primary" onClick={this.passReview}>评审通过</Button>
+            <Button type="primary" onClick={this.passReview}
+              disabled={title.label_review_status === '评审通过'}>评审通过</Button>
           </Col>
         </Row>
         <Row style={{ marginTop: "15px" }}>
           <Col span={20} style={{ textAlign: 'left' }}>
-            <textarea style={{width: "96%", height: "100%"}} onChange={this.handle_review_fail_reason_change} value={rfr}></textarea>
+            <textarea style={{width: "96%", height: "100%"}}
+              onChange={this.handle_review_fail_reason_change}
+              value={this.state.title.review_fail_reason}></textarea>
           </Col>
           <Col span={3} style={{ textAlign: 'left' }}>
             <Button type="primary" onClick={this.notPassReview}>评审不通过</Button>
