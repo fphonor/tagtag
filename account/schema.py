@@ -1,25 +1,12 @@
 from django.contrib.auth import authenticate
+from django.settings import JWT_SECRET
 
+import jwt
 import graphene
 from graphene_django import DjangoObjectType
 
 from account.models import User
-
-
-# It tries to get a user from the session content
-def get_user(info):
-    return User.objects.get(pk=1)
-
-    token = info.context.session.get('token')
-
-    if not token:
-        return
-
-    try:
-        user = User.objects.get(token=token)
-        return user
-    except Exception:
-        raise Exception('User not found!')
+from account.utils import get_user
 
 
 class UserType(DjangoObjectType):
@@ -52,7 +39,8 @@ class CreateUser(graphene.Mutation):
 
 
 class Login(graphene.Mutation):
-    user = graphene.Field(UserType)
+    current_user = graphene.Field(UserType)
+    jwt_token = graphene.String()
 
     class Arguments:
         username = graphene.String()
@@ -65,7 +53,16 @@ class Login(graphene.Mutation):
             raise Exception('Invalid username or password!')
 
         info.context.session['token'] = user.token
-        return Login(user=user)
+        return Login(
+            current_user=user,
+            jwt_token=jwt.encode(
+                {
+                    'username': user.username,
+                    'token': user.token,
+                    'role': user.role,
+                }, JWT_SECRET
+            )
+        )
 
 
 class Mutation(graphene.ObjectType):
