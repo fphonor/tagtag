@@ -10,7 +10,7 @@ import {
   SET_CURRENT_USER,
   UPDATE_DEFAULT_LABEL_SEARCH_FIELDS,
 } from '../constant/ActionType'
-import { CURRENT_USER } from '../constant'
+import { CURRENT_USER, AUTH_TOKEN } from '../constant'
 
 import searchFormFields from './SearchFormFields'
 
@@ -80,6 +80,8 @@ const currentTitle = (state = {}, action) => {
 }
 
 const currentUser = (state=JSON.parse(localStorage.getItem(CURRENT_USER)) || {}, action) => {
+  let jwt_token = localStorage.getItem(AUTH_TOKEN)
+  if (!jwt_token) return {}
   switch (action.type) {
     case SET_CURRENT_USER:
       localStorage.setItem(CURRENT_USER, JSON.stringify(action.currentUser))
