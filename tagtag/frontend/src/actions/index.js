@@ -14,6 +14,7 @@ import {
   FIELD_ON_CHANGE,
   FIELD_OPTIONS_CLEAN,
   FIELD_SEARCH_FINISHED,
+  SET_CURRENT_USER,
   UPDATE_DEFAULT_LABEL_SEARCH_FIELDS,
 } from '../constant/ActionType';
 import { getNewKey } from '../util';
@@ -21,14 +22,14 @@ import { getNewKey } from '../util';
 import gql from 'graphql-tag'
 import { client } from '../graphql'
 
-export const addLabel = ({parentId, lebalType, skillType}) => (dispatch, getState) => {
+export const addLabel = ({parent_id, lebal_type, skill_type}) => (dispatch, getState) => {
   dispatch({
     type: ADD_LABEL,
     id: null,
     key: getNewKey(),
-    parentId,
-    lebalType,
-    skillType,
+    parent_id,
+    lebal_type,
+    skill_type,
   });
 }
 
@@ -100,86 +101,13 @@ export const modifyTitle = (title) => (dispatch) => {
   }
 }
 
-const get_options_dict = {
-  labels: (action, dispatch) => {
-    client.query({
-      query: gql`
-        query OptionsQuery ($nameLike: String!) {
-          labels (nameLike: $nameLike) {
-            id
-            name
-            level
-          }
-        }
-      `,
-      variables: { nameLike: action.value },
-    }).then(response => {
-      let options = response.data.labels
-        .filter(x => x.level === 1)
-        .map(x => ({value: x.id, text: x.name}))
-      dispatch({
-        ...action,
-        type: FIELD_SEARCH_FINISHED,
-        options,
-      })
-    })
-  },
-  subLabels: (action, dispatch) => {
-    client.query({
-      query: gql`
-        query OptionsQuery ($nameLike: String!) {
-          labels (nameLike: $nameLike) {
-            id
-            name
-            level
-          }
-        }
-      `,
-      variables: { nameLike: action.value },
-    }).then(response => {
-      let options = response.data.labels
-        .filter(x => x.level === 1)
-        .map(x => ({value: x.id, text: x.name}))
-      dispatch({
-        ...action,
-        type: FIELD_SEARCH_FINISHED,
-        options,
-      })
-    })
-  },
-  titles: (action, dispatch) => {
-    client.query({
-      query: gql`
-        query OptionsQuery ($nameLike: String!) {
-          users (nameLike: $nameLike) {
-            id
-            username 
-            type
-          }
-        }
-      `,
-      variables: { nameLike: action.value },
-    }).then(response => {
-      let options = response.data.labels
-        .filter(x => x.level === 1)
-        .map(x => ({value: x.id, text: x.name}))
-      dispatch({
-        ...action,
-        type: FIELD_SEARCH_FINISHED,
-        options,
-      })
-    })
-  },
-}
-
-
 const labels_query_params = (value) => {
   return !!value
   ? {
       query: gql`
         query OptionsQuery ($nameLike: String!) {
-          labels (nameLike: $nameLike) {
-            id name level skillType labelType parent {id}
+          gp_labels (nameLike: $nameLike) {
+            id label_name label_level skill_type label_type parent_id
           }
         }
       `,
@@ -188,36 +116,48 @@ const labels_query_params = (value) => {
   : {
       query: gql`
         query OptionsQuery {
-          labels {
-            id name level skillType labelType parent {id}
+          gp_labels {
+            id label_name label_level skill_type label_type parent_id
           }
         }
       `,
     }
 }
+
+const users_query_params = (value) => ({
+  query: gql`
+    query UsersQuery {
+      users {
+        id token username
+      }
+    }
+  `,
+  variables: { nameLike: value },
+})
+
 const SEARCH_CONF = {
   titles: {
     title_course: {
       query_params: (value) => ({
         query: gql`
           query CoursesQuery {
-            courses {
-              id name nameZh unitNum
+            gp_courses {
+              course_id course_name course_ch_name unit_num
             }
           }
         `,
         variables: { nameLike: value },
       }),
-      options_builder: (response, value, fieldList) => response.data.courses
-        .map(x => ({value: x.id, text: x.nameZh, unitNum: x.unitNum}))
+      options_builder: (response, value, fieldList) => response.data.gp_courses
+        .map(x => ({value: x.course_id, text: x.course_ch_name, unit_num: x.unit_num}))
         .filter(x => value ? x.text.indexOf(value) !== -1: true)
     },
     unit_id: {
       query_params: (value) => ({
         query: gql`
-          query CoursesQuery{
-            courses{
-              id name nameZh unitNum
+          query CoursesQuery {
+            gp_courses {
+              course_id course_name course_ch_name unit_num
             }
           }
         `,
@@ -225,12 +165,12 @@ const SEARCH_CONF = {
       }),
       options_builder: (response, value, fieldList) => {
         let selected_course_ids = fieldList.find(x => x.dataIndex === 'title_course').value.map(x => x.key);
-        let courses = response.data.courses
-          .filter(x => selected_course_ids.indexOf(x.id) !== -1)
+        let gp_courses = response.data.gp_courses
+          .filter(x => selected_course_ids.indexOf(x.course_id) !== -1)
 
-        let options = [].concat(...(courses.map(c => {
+        let options = [].concat(...(gp_courses.map(c => {
           let options = [];
-          for (let i=1; i<=c.unitNum; i++) {
+          for (let i=1; i<=c.unit_num; i++) {
             options.push({
               value: i,
               text: `第${i}章`
@@ -242,34 +182,15 @@ const SEARCH_CONF = {
       }
     },
     discourse_tag_user: {
-      query_params: (value) => ({
-        query: gql`
-          query UsersQuery {
-            users {
-              id token username
-            }
-          }
-        `,
-        variables: { nameLike: value },
-      }),
+      query_params: users_query_params,
       options_builder: (response, value, fieldList) => {
-        debugger;
         return response.data.users
           .map(x => ({value: x.id, text: x.username,}))
           .filter(x => value ? x.text.indexOf(value) !== -1: true)
       }
     },
     discourse_review_user: {
-      query_params: (value) => ({
-        query: gql`
-          query UsersQuery {
-            users {
-              id token username
-            }
-          }
-        `,
-        variables: { nameLike: value },
-      }),
+      query_params: users_query_params,
       options_builder: (response, value, fieldList) => {
         return response.data.users
           .map(x => ({value: x.id, text: x.username,}))
@@ -277,16 +198,7 @@ const SEARCH_CONF = {
       }
     },
     label_tag_user: {
-      query_params: (value) => ({
-        query: gql`
-          query UsersQuery {
-            users {
-              id token username
-            }
-          }
-        `,
-        variables: { nameLike: value },
-      }),
+      query_params: users_query_params,
       options_builder: (response, value, fieldList) => {
         return response.data.users
           .map(x => ({value: x.id, text: x.username,}))
@@ -294,16 +206,7 @@ const SEARCH_CONF = {
       }
     },
     label_review_user: {
-      query_params: (value) => ({
-        query: gql`
-          query UsersQuery {
-            users {
-              id token username
-            }
-          }
-        `,
-        variables: { nameLike: value },
-      }),
+      query_params: users_query_params,
       options_builder: (response, value, fieldList) => {
         return response.data.users
           .map(x => ({value: x.id, text: x.username,}))
@@ -312,42 +215,42 @@ const SEARCH_CONF = {
     },
     skill_level_1: {
       query_params: labels_query_params,
-      options_builder: (response, value, fieldList) => {
-        return response.data.labels
-          .filter(x => x.level === 1 && x.labelType === 'WJN')
-          .map(x => ({value: x.id, text: x.name}))
+      options_builder: ({data: {gp_labels}}, value, fieldList) => {
+        return gp_labels
+          .filter(x => x.label_level === 1 && x.label_type === 'WJN')
+          .map(x => ({value: x.id, text: x.label_name}))
       }
     },
     skill_level_2: {
       query_params: labels_query_params,
-      options_builder: (response, value, fieldList) => {
-        return response.data.labels
-          .filter(x => x.level === 2 && x.labelType === 'WJN')
-          .map(x => ({value: x.id, text: x.name, parentId: x.parent && x.parent.id}))
+      options_builder: ({data: {gp_labels}}, value, fieldList) => {
+        let skill_level_1 = fieldList.find(x => x.dataIndex === 'skill_level_1')
+        return gp_labels
+          .filter(x => x.label_level === 2 && x.label_type === 'WJN')
           .filter(x => {
-            let skill_level_1 = fieldList.find(x => x.dataIndex === 'skill_level_1')
-            return skill_level_1.value ? skill_level_1.value.find(y => y.key === x.parentId) : true
+            return skill_level_1.value ? skill_level_1.value.find(y => parseInt(y.key, 10) === x.parent_id) : true
           })
+          .map(x => ({value: x.id, text: x.label_name}))
       }
     },
     content_level_1: {
       query_params: labels_query_params,
-      options_builder: (response) => {
-        return response.data.labels
-          .filter(x => x.level === 1 && x.labelType === 'NRKJ')
-          .map(x => ({value: x.id, text: x.name}))
+      options_builder: ({data: {gp_labels}}) => {
+        return gp_labels
+          .filter(x => x.label_level === 1 && x.label_type === 'NRKJ')
+          .map(x => ({value: x.id, text: x.label_name}))
       }
     },
     content_level_2: {
       query_params: labels_query_params,
-      options_builder: (response, value, fieldList) => {
-        return response.data.labels
-          .filter(x => x.level === 2 && x.labelType === 'NRKJ')
-          .map(x => ({value: x.id, text: x.name, parentId: x.parent && x.parent.id}))
+      options_builder: ({data: {gp_labels}}, value, fieldList) => {
+        let content_level_1 = fieldList.find(x => x.dataIndex === 'content_level_1')
+        return gp_labels
+          .filter(x => x.label_level === 2 && x.label_type === 'NRKJ')
           .filter(x => {
-            let content_level_1= fieldList.find(x => x.dataIndex === 'content_level_1')
-            return content_level_1.value ? content_level_1.value.find(y => y.key === x.parentId) : true
+            return content_level_1.value ? content_level_1.value.find(y => parseInt(y.key, 10) === x.parent_id) : true
           })
+          .map(x => ({value: x.id, text: x.label_name, parent_id: x.parent_id}))
       }
     },
   },
@@ -374,25 +277,6 @@ export const on_search_of_field = (listName, dataIndex, fieldList) => (dispatch,
         options: SEARCH_CONF[listName][dataIndex].options_builder(response, value, fieldList),
       })
     })
-    // client.query({
-    //   query: gql`
-    //     query OptionsQuery ($nameLike: String!) {
-    //       labels (nameLike: $nameLike) {
-    //         id name level
-    //       }
-    //     }
-    //   `,
-    //   variables: { nameLike: value },
-    // }).then(response => {
-    //   let options = response.data.labels
-    //     .filter(x => x.level === 1)
-    //     .map(x => ({value: x.id, text: x.name}))
-    //   dispatch({
-    //     ...action,
-    //     type: FIELD_SEARCH_FINISHED,
-    //     options,
-    //   })
-    // })
   }
 }
 
@@ -420,9 +304,17 @@ export const field_options_clean = (listName, dataIndex, fieldList) => (dispatch
     })
   }
 }
+
 export const update_label_search_field = (label_earch_fields) => {
   return {
     label_earch_fields,
     type: UPDATE_DEFAULT_LABEL_SEARCH_FIELDS,
+  }
+}
+
+export const setCurrentUser = currentUser => {
+  return {
+    currentUser,
+    type: SET_CURRENT_USER,
   }
 }

@@ -2,8 +2,12 @@ import React, { Component } from 'react'
 import { Layout, Menu, Icon } from 'antd'
 import { Switch, Link, Route, Redirect } from 'react-router-dom'
 import { withRouter } from 'react-router'
+import { connect } from 'react-redux'
+
 import TitleList from './TitleList'
+import Title from './Title'
 import Login from './Login'
+import Profile from './Profile'
 import { Labels, SubLabels } from './Labels'
 
 import 'antd/dist/antd.css'
@@ -22,12 +26,21 @@ class App extends Component {
         iconType:"anticon anticon-bars",
         text: '题目标注'
       },
+      valid_roles: ['manager', 'default', ],
     }, {
       linkTo: "/labels",
       content: {
         iconType:"flag",
         text: '标签管理'
       },
+      valid_roles: ['manager'],
+    }, {
+      linkTo: "/profile",
+      content: {
+        iconType:"user",
+        text: '个人信息'
+      },
+      valid_roles: ['default'],
     }],
   }
   toggle = () => {
@@ -41,6 +54,9 @@ class App extends Component {
       return this.props.location.pathname.startsWith(m.linkTo)
     })
     let defaultSelectedKeys = [this.state.menus.indexOf(defaultMenu).toString()]
+
+    let currentUser = this.props.currentUser
+    console.log('currentUser: ', currentUser)
 
     return (
       <Layout style={{height: "100%"}}>
@@ -57,14 +73,20 @@ class App extends Component {
                 </div>
               </Link>
             </Menu.Item>
-            {this.state.menus.map((menu, i) => (
-              <Menu.Item key={i}>
-                <Link to={menu.linkTo}>
-                  <Icon type={menu.content.iconType} />
-                  <span>{menu.content.text}</span>
-                </Link>
-              </Menu.Item>
-            ))}
+            {
+              this.state.menus.filter(
+                menu => !currentUser.role || menu.valid_roles.find( x => x === currentUser.role.role)
+              ).map(
+                (menu, i) => (
+                <Menu.Item key={i}>
+                  <Link to={menu.linkTo}>
+                    <Icon type={menu.content.iconType} />
+                    <span>{menu.content.text}</span>
+                  </Link>
+                </Menu.Item>
+                )
+              )
+            }
           </Menu>
         </Sider>
         <Layout>
@@ -75,13 +97,25 @@ class App extends Component {
               onClick={this.toggle}/>
           </Header>
           <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', minHeight: 280 }}>
-            <Switch>
-              <Route exact path="/labels" component={Labels}/>
-              <Route exact path="/labels/:parent_label_id" component={SubLabels}/>
-              <Route path="/titles" component={TitleList}/>
-              <Route path="/login" component={Login}/>
-              <Redirect to='/titles'/>
-            </Switch>
+            { this.props.currentUser.token &&
+              <div>
+                <Switch>
+                  <Route exact path="/labels" component={Labels}/>
+                  <Route exact path="/labels/:parent_label_id" component={SubLabels}/>
+                  <Route exact path="/titles" component={TitleList}/>
+                  <Route path="/titles/:title_ident" component={Title}/>
+                  <Route path="/login" component={Login}/>
+                  <Route exact path="/profile" component={Profile}/>
+                  <Redirect to='/titles'/>
+                </Switch>
+              </div>
+            }
+            { !this.props.currentUser.token &&
+              <Switch>
+                <Route path="/login" component={Login}/>
+                <Redirect to='/login'/>
+              </Switch>
+            }
           </Content>
         </Layout>
       </Layout>
@@ -89,4 +123,8 @@ class App extends Component {
   }
 }
 
-export default withRouter(App)
+const mapStateToProps = (state, ownProps) => ({
+  currentUser: state.currentUser,
+})
+
+export default withRouter(connect(mapStateToProps)(App))

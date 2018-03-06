@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { withApollo } from 'react-apollo'
+import { connect } from 'react-redux'
 import gql from 'graphql-tag'
 import { client } from '../graphql'
 // eslint-disable-next-line
@@ -524,29 +525,37 @@ class TitleQuestions extends QuestionsBase {
         <Row>
           <Col span={5} style={{ textAlign: 'right' }}>
             <Button type="primary" onClick={this.saveQuestions}
-              disabled={title.label_review_status === '评审通过'}>保存</Button>
+              disabled={title.label_review_status === '评审通过' || this.props.currentUser.role.skill_role!== "skill_tagger" }>保存</Button>
           </Col>
           <Col span={5} style={{ textAlign: 'right' }}>
             <Button type="primary" onClick={this.removeQuestions}
-              disabled={title.label_review_status === '评审通过'}>删除</Button>
+              disabled={title.label_review_status === '评审通过' || this.props.currentUser.role.skill_role!== "skill_tagger" }>删除</Button>
           </Col>
           <Col span={5} style={{ textAlign: 'right' }}>
             <Button type="primary" onClick={this.addTempQuestion}
-              disabled={title.label_review_status === '评审通过'}>新增</Button>
+              disabled={title.label_review_status === '评审通过' || this.props.currentUser.role.skill_role!== "skill_tagger" }>新增</Button>
           </Col>
           <Col span={5} style={{ textAlign: 'right' }}>
             <Button type="primary" onClick={this.passReview}
-              disabled={title.label_review_status === '评审通过'}>评审通过</Button>
+              disabled={title.label_review_status === '评审通过' || this.props.currentUser.role.skill_role !== "skill_reviewer" }>评审通过</Button>
           </Col>
         </Row>
         <Row style={{ marginTop: "15px" }}>
           <Col span={20} style={{ textAlign: 'left' }}>
             <textarea style={{width: "96%", height: "100%"}}
               onChange={this.handle_review_fail_reason_change}
-              value={this.state.title.review_fail_reason}></textarea>
+              value={this.state.title.review_fail_reason}
+              disabled={
+                title.label_review_status === '评审通过'
+                || this.props.currentUser.role.skill_role !== "skill_reviewer"
+              }></textarea>
           </Col>
           <Col span={3} style={{ textAlign: 'left' }}>
-            <Button type="primary" onClick={this.notPassReview}>评审不通过</Button>
+            <Button type="primary" onClick={this.notPassReview}
+              disabled={
+                title.label_review_status === '评审通过' 
+                || this.props.currentUser.role.skill_role !== "skill_reviewer"
+              }>评审不通过</Button>
           </Col>
         </Row>
       </div>
@@ -554,4 +563,7 @@ class TitleQuestions extends QuestionsBase {
   }
 }
 
-export default withApollo(TitleQuestions)
+export default withApollo(
+  connect(
+    (state, ownProps) => ({ currentUser: state.currentUser || {} })
+  )(TitleQuestions))

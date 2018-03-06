@@ -7,8 +7,10 @@ import {
   FETCH_TITLES,
   FETCH_TITLE,
   MODIFY_TITLE,
+  SET_CURRENT_USER,
   UPDATE_DEFAULT_LABEL_SEARCH_FIELDS,
 } from '../constant/ActionType'
+import { CURRENT_USER } from '../constant'
 
 import searchFormFields from './SearchFormFields'
 
@@ -23,7 +25,7 @@ const labels = (state = [], action) => {
       let label = action.label
       return state.map(x =>
         (x.key === label.key) 
-          ? {...x, id: label.id, name: label.name}
+          ? {...x, id: label.id, label_name: label.label_name}
           : x
       )
     case DELETE_LABEL:
@@ -77,12 +79,22 @@ const currentTitle = (state = {}, action) => {
   }
 }
 
+const currentUser = (state=JSON.parse(localStorage.getItem(CURRENT_USER)) || {}, action) => {
+  switch (action.type) {
+    case SET_CURRENT_USER:
+      localStorage.setItem(CURRENT_USER, JSON.stringify(action.currentUser))
+      return {...state, ...action.currentUser}
+    default:
+      return state
+  }
+}
+
 const defaultLabelSearchFields = (state={
-    level: 1,
-    labelType: "WJN",
-    name: "",
-    parentId: null,
-    skillType: 'TL',
+    label_level: 1,
+    label_type: "WJN",
+    label_name: "",
+    parent_id: null,
+    skill_type: 'TL',
   }, action) => {
   switch (action.type) {
     case UPDATE_DEFAULT_LABEL_SEARCH_FIELDS:
@@ -96,6 +108,7 @@ export default combineReducers({
   labels,
   titles,
 	currentTitle,
+  currentUser,
   searchFormFields,
   defaultLabelSearchFields
 })

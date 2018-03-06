@@ -7,11 +7,11 @@ import {
 } from '../constant/ActionType'
 
 const LABEL_SFFs = [{
-  title: '语言技能', dataIndex: 'skillType', type: 'select',
+  title: '语言技能', dataIndex: 'skill_type', type: 'select',
   options: [{value: "TL", text: "听力"}, {value: "YD", text: "阅读"}, {value: "XZ", text: "写作"},
             {value: "KY", text: "口语"}]
 }, {
-  title: '标签分类', dataIndex: 'labelType', type: 'select',
+  title: '标签分类', dataIndex: 'label_type', type: 'select',
   options: [{value: "WJN", text: "微技能"}, {value: "NRKJ", text: "内容框架"}]
 }]
 
@@ -75,8 +75,8 @@ const bindListNameWithSearchFormFields = ({LIST_NAME, defaultSFFs}) => {
   }
 }
 
-const labels = bindListNameWithSearchFormFields({
-  LIST_NAME: 'labels',
+const gp_labels = bindListNameWithSearchFormFields({
+  LIST_NAME: 'gp_labels',
   defaultSFFs: LABEL_SFFs
 })
 
@@ -115,12 +115,12 @@ const titles = bindListNameWithSearchFormFields({
     }, ], [{
       title: '语篇标注状态',
       type: 'select',
-      dataIndex: 'discourse_tag_status',
+      dataIndex: 'tag_status',
       options:[{value: "待修改", text: "待修改"},{value: "已标注", text: "已标注"}, {value: "未标注", text: "未标注"}]
     }, {
       title: '语篇评审状态',
       type: 'select',
-      dataIndex: 'discourse_review_status',
+      dataIndex: 'review_status',
       options:[{value: "未评审", text: "未评审"},{value: "评审通过", text: "评审通过"}, {value: "评审未通过", text: "评审未通过"}]
     }, {
       title: '微技能标注状态',
@@ -161,7 +161,7 @@ const titles = bindListNameWithSearchFormFields({
       title: '语言技能',
       type: 'select',
       dataIndex: 'title_category',
-      options: [{value: "TL", text: "听力"}, {value: "阅读", text: "阅读"}, {value: "XZ", text: "写作"}, {value: "KY", text: "口语"}]
+      options: [{value: "听力", text: "听力"}, {value: "阅读", text: "阅读"}, {value: "写作", text: "写作"}, {value: "口语", text: "口语"}]
     }, {
       title: '微技能L1',
       type: 'select-dynamic',
@@ -191,6 +191,6 @@ const titles = bindListNameWithSearchFormFields({
 })
 
 export default combineReducers({
-  labels,
+  gp_labels,
   titles,
 })

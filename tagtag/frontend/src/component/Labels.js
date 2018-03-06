@@ -13,14 +13,6 @@ import { update_label_search_field, on_search_of_field, on_change_of_field } fro
 
 import { getNewKey } from '../util';
 
-const oEq = (o1, o2) => {
-  let ks1 = Object.keys(o1).filter(k => k !== 'key')
-  let ks2 = Object.keys(o2).filter(k => k !== 'key')
-  return ks1.length === ks2.length
-    && ks1.every(k => ks2.find(k2 => k === k2))
-    && ks1.every(k => o1[k] === o2[k])
-}
-
 const labelSemanticEq = (x, y) => {
   return ['label_name', 'label_level', 'label_type', 'skill_type'].every(k =>
     x[k] === y[k]
@@ -109,16 +101,34 @@ class LabelsBase extends React.Component {
   }
 
   addLabel = () => {
-    this.setState(prevState => ({
-      gp_labels: prevState.gp_labels.concat(
-        [{...this.props.defaultLabelFields, label_name: "", key: getNewKey()}]
-      )
-    }))
+    this.setState(({gp_labels, defaultLabelFields}) => {
+      defaultLabelFields = defaultLabelFields || this.props.defaultLabelFields
+      return {
+        gp_labels: gp_labels.concat(
+          [{...defaultLabelFields, label_name: "", key: getNewKey()}]
+        )
+      }
+    })
   }
 
   removeLabels = () => {
+    let that = this
+    const onSuccess = ({ delete_label: { status }}, label) => {
+      console.log('delete_label: ', status);
+
+      that.props.apollo.gp_labels = that.props.apollo.gp_labels.filter(l => l.id !== label.id)
+
+      that.setState(({ originLabels, gp_labels }) => {
+        return {
+          originLabels: originLabels.filter(l => l.id !== label.id),
+          gp_labels: gp_labels.filter(l => l.id !== label.id),
+          checkedLabels: [],
+        }
+      })
+    }
     this.state.checkedLabels
       && window.confirm('确定要删除这些标签吗？')
+      // eslint-disable-next-line
       && this.state.checkedLabels.filter(x => !x.id).map(label => {
            this.setState(({ gp_labels }) => {
              return {
@@ -126,28 +136,24 @@ class LabelsBase extends React.Component {
              }
            })
          })
+      // eslint-disable-next-line
       && this.state.checkedLabels.filter(x => x.id).map(label => {
           client.mutate({
             mutation: gql`
-              mutation DeleteLabel($id: ID!) {
-                deleteLabel(id: $id) {
+              mutation DeleteLabel($id: Int!) {
+                delete_label(id: $id) {
                   status
                 }
               }
             `,
             variables: label,
-          }).then(({ data: { deleteLabel: { status }}})=> {
-            console.log('deleteLabel: ', status);
-
-            this.props.apollo.gp_labels = this.props.apollo.gp_labels.filter(l => l.id !== label.id)
-
-            this.setState(({ originLabels, gp_labels }) => {
-              return {
-                originLabels: originLabels.filter(l => l.id !== label.id),
-                gp_labels: gp_labels.filter(l => l.id !== label.id),
-                checkedLabels: [],
-              }
-            })
+          }).then(({ data, errors})=> {
+            if (!errors && data) {
+              onSuccess(data, label)
+            } else {
+              console.log('login ERROR: ', errors);
+              alert('请先删除该标签下的子标签');
+            }
           })
         })
   }
@@ -196,32 +202,44 @@ class LabelsBase extends React.Component {
     })
   }
 
-  __modifyLabel = (label) => {
+  __modifyLabel = (_label) => {
     client.mutate({
       mutation: gql`
         mutation ModifyLabel(
-            $id: Int!
+            $id: Int
             $label_name: String!,
+            $label_level: Int!,
+            $label_type: String!,
+            $skill_type: String!,
+            $parent_id: Int
           ) {
           change_label(
             id: $id
             label_name: $label_name
+            label_level: $label_level
+            label_type: $label_type
+            skill_type: $skill_type
+            parent_id: $parent_id
           ) {
             label {
               id
               label_name
               parent_id
-              label_type label_level skill_type
+              label_type
+              label_level
+              skill_type
             }
           }
         }
       `,
-      variables: label,
+      variables: _label,
     }).then(({ data: { change_label: { label }}})=> {
+      debugger;
       console.log('__modifyLabel: ', label);
-      this.setState(({ originLabels }) => {
+      this.setState(({ originLabels, gp_labels }) => {
         return {
-          originLabels: originLabels.map(x => x.id === label.id ? label : x)
+          originLabels: _label.id ? originLabels.map(x => x.id === label.id ? label : x) : originLabels.concat([label]),
+          gp_labels: gp_labels.map(x => labelSemanticEq(x, label) ? {...x, id: label.id} : x),
         }
       })
     })
@@ -284,11 +302,11 @@ class Labels extends LabelsBase {
 
   handleFieldChange = (field, update_label_search_field) =>  value => {
     update_label_search_field({[field]: value })
-    // this.setState(state => {
-    //   return {
-    //     defaultLabelFields: { ...state.defaultLabelFields, [field]: value }
-    //   }
-    // })
+    this.setState(state => {
+      return {
+        defaultLabelFields: { ...state.defaultLabelFields, [field]: value }
+      }
+    })
   }
 
   shouldComponentUpdate(nextProps, nextState) {
@@ -498,8 +516,6 @@ const mapStateToProps = (state, ownProps) => ({
   defaultLabelFields: state.defaultLabelSearchFields,
 })
 
-const getAllLabels = () => {
-}
 const LABELS_QUERY = gql`
   query LabelsQuery {
     gp_labels {

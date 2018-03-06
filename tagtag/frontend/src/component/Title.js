@@ -2,15 +2,15 @@ import React from 'react'
 import { withRouter } from 'react-router'
 
 import { withApollo } from 'react-apollo'
+import { connect } from 'react-redux'
 import gql from 'graphql-tag'
 import TitleQuestions from './TitleQuestions'
 
-import { Collapse, Select, Form, Row, Col, Input, Button } from 'antd'
+import { Select, Form, Row, Col, Input, Button } from 'antd'
 import { Tabs } from 'antd';
 const TabPane = Tabs.TabPane;
 const FormItem = Form.Item
 const Option = Select.Option
-const Panel = Collapse.Panel;
 
 
 class Discourse extends React.Component {
@@ -21,7 +21,6 @@ class Discourse extends React.Component {
 
   constructor (props) {
     super(props)
-    debugger;
     let { discourse, title } = this.props
     this.setState({ discourse, title})
   }
@@ -380,7 +379,12 @@ class Discourse extends React.Component {
     };
 
     let { discourse, title } = this.state
+    let { currentUser } = this.props
+    if (! (currentUser && Object.keys(currentUser).length) ) {
+      return null
+    }
     console.log('discourse: ', discourse)
+    console.log('currentUser: ', currentUser)
     console.log('title: ', title)
     return (
       <Form onSubmit={this.handleSubmit}>
@@ -732,10 +736,10 @@ class Discourse extends React.Component {
         </Row>
         <Row>
           <Col span={6} style={{ textAlign: 'center' }}>
-            <Button onClick={this.saveDiscourse}>保存</Button>
+            <Button onClick={this.saveDiscourse} disabled={discourse.review_status === '评审通过' || currentUser.role.discourse_role !== "discourse_tagger" }>保存</Button>
           </Col>
           <Col span={6} style={{ textAlign: 'right' }}>
-            <Button type="primary" onClick={this.passReview}>评审通过</Button>
+            <Button type="primary" onClick={this.passReview} disabled={discourse.review_status === '评审通过' || currentUser.role.discourse_role !== "discourse_reviewer" }>评审通过</Button>
           </Col>
         </Row>
         <Row style={{ marginTop: "15px" }}>
@@ -744,11 +748,13 @@ class Discourse extends React.Component {
               style={{width: "96%", height: "100%"}}
               value={discourse.review_fail_reason}
               onChange={this.handleFieldChange('review_fail_reason')}
+              disabled={discourse.review_status === '评审通过' || currentUser.role.discourse_role !== "discourse_reviewer" }
               >
             </textarea>
           </Col>
           <Col span={3} style={{ textAlign: 'left' }}>
-            <Button type="primary" onClick={this.notPassReview}>评审不通过</Button>
+            <Button type="primary" onClick={this.notPassReview}
+              disabled={discourse.review_status === '评审通过' || currentUser.role.discourse_role !== "discourse_reviewer" }>评审不通过</Button>
           </Col>
         </Row>
       </Form>
@@ -756,7 +762,10 @@ class Discourse extends React.Component {
   }
 }
 
-const TagWrappedDiscoure = Form.create()(withApollo(Discourse))
+const TagWrappedDiscoure = Form.create()(withApollo(
+  connect(
+    (state, ownProps) => ({ currentUser: state.currentUser || {} })
+  )(Discourse)))
 
 class Title extends React.Component {
   state = {
