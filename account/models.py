@@ -1,5 +1,6 @@
 import binascii
 import os
+import json
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -7,7 +8,7 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     token = models.CharField(max_length=40)
-    role = models.CharField(max_length=40, default="default")
+    role = models.CharField(max_length=1000, default=json.dumps({"role": "default"}))
 
     def save(self, *args, **kwargs):
         if not self.token:

@@ -443,6 +443,8 @@ class NotPassQuestionDetailReview(graphene.Mutation):
 
     def mutate(self, info, title_ident, review_fail_reason):
         user = get_user(info)
+        if user is None:
+            raise Exception('此操作需要用户登录')
         # if user.role != 'manager':
         #     raise Exception('您没有评审权限')
         conn = utils.get_conn()
