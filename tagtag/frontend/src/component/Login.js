@@ -130,15 +130,6 @@ class Login extends Component {
   render() {
     if (this.props.currentUser && this.props.currentUser.token) {
       return <div>
-        <Row gutter={24}>
-          <Col span={8}>
-            <Button onClick={() => this.props.history.go(-1)}>返回最近访问的页面</Button>
-          </Col>
-          <Col span={16}>
-            <Button onClick={this._logout.bind(this)}>退出系统</Button>
-          </Col>
-        </Row>
-
         { this.props.currentUser.role.role === 'manager' &&
         <Form
           className="ant-advanced-search-form"
@@ -170,26 +161,26 @@ class Login extends Component {
           <Row gutter={24}>
             <Col span={8} style={{display: "block"}} key={4}>
               <FormItem label="语篇标注角色" >
-                <Select
-                  labelInValue
+                <select
                   onChange={this._set_discourse_role.bind(this)}
                   style={{ width: '100%' }}
                   >
-                  <Option value="discourse_tagger">标注人</Option>
-                  <Option value="discourse_reviewer">审批人</Option>
-                </Select>
+                  <option value="">---</option>
+                  <option value="discourse_tagger">标注人</option>
+                  <option value="discourse_reviewer">审批人</option>
+                </select>
               </FormItem>
             </Col>
             <Col span={8} style={{display: "block"}} key={4}>
               <FormItem label="微技能标注角色" >
-                <Select
-                  labelInValue
+                <select
                   onChange={this._set_skill_role.bind(this)}
                   style={{ width: '100%' }}
                   >
-                  <Option value="skill_tagger">标注人</Option>
-                  <Option value="skill_reviewer">审批人</Option>
-                </Select>
+                  <option value="">---</option>
+                  <option value="skill_tagger">标注人</option>
+                  <option value="skill_reviewer">审批人</option>
+                </select>
               </FormItem>
             </Col>
           </Row>
@@ -200,6 +191,7 @@ class Login extends Component {
           </Row>
         </Form>
         }
+        { this.props.currentUser.role.role !== 'manager' && <Redirect to="titles"/> }
       </div>
     } else {
       return (
