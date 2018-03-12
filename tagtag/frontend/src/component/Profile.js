@@ -4,7 +4,7 @@ import { withApollo } from 'react-apollo'
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router'
 import gql from 'graphql-tag'
-import { clearCurrentUser } from '../actions'
+import { setCurrentUser, clearCurrentUser } from '../actions'
 import { Button, Input, Form, Row, Col, Select } from 'antd'
 const FormItem = Form.Item
 const Option = Select.Option
@@ -19,6 +19,7 @@ class Profile extends Component {
       skill_role: register_user_info.skill_role,
       role: 'default',
     })}
+    let {setCurrentUser} = this.props
     this.props.client.mutate({
       mutation: gql`
         mutation ModifyUser(
@@ -36,10 +37,11 @@ class Profile extends Component {
             role: $role
           ) {
             modified_user {
-              username
+              id
               email
-              token
+              username
               role
+              token
             }
           }
         }
@@ -47,9 +49,11 @@ class Profile extends Component {
       variables: register_user_info,
     }).then(({ data, errors})=> {
       if (!errors && data) {
-        alert('添加用户成功: ' + data.status)
+        let user = data.modify_user.modified_user
+        setCurrentUser({...user, role: JSON.parse(user.role)})
+        alert('修改用户信息成功')
       } else {
-        alert('添加用户失败: ' + errors.map(x => x.message))
+        alert('修改用户信息失败: ' + errors.map(x => x.message))
       }
     })
   }
@@ -76,6 +80,7 @@ class Profile extends Component {
         let user = data.me;
         let currentUser = {...user, role: JSON.parse(user.role)}
         this.setState({ current_user: {...currentUser, ...currentUser.role}})
+        this.props.setCurrentUser(currentUser)
       }
     })
   }
@@ -169,4 +174,4 @@ const mapStateToProps = (state, ownProps) => ({
   currentUser: state.currentUser,
 })
 
-export default withRouter(withApollo(connect(mapStateToProps, {clearCurrentUser})(Profile)));
+export default withRouter(withApollo(connect(mapStateToProps, {setCurrentUser, clearCurrentUser})(Profile)));

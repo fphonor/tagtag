@@ -21,8 +21,6 @@ class Discourse extends React.Component {
 
   constructor (props) {
     super(props)
-    let { discourse, title } = this.props
-    this.setState({ discourse, title})
   }
 
   componentWillReceiveProps({ discourse, title }) {
@@ -746,7 +744,7 @@ class Discourse extends React.Component {
           <Col span={20} style={{ textAlign: 'left' }}>
             <textarea
               style={{width: "96%", height: "100%"}}
-              value={discourse.review_fail_reason}
+              value={discourse.review_fail_reason || ""}
               onChange={this.handleFieldChange('review_fail_reason')}
               disabled={discourse.review_status === '评审通过' || currentUser.role.discourse_role !== "discourse_reviewer" }
               >
