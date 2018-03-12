@@ -100,17 +100,6 @@ class LabelsBase extends React.Component {
       .map(ml => this.__modifyLabel(ml))
   }
 
-  addLabel = () => {
-    this.setState(({gp_labels, defaultLabelFields}) => {
-      defaultLabelFields = defaultLabelFields || this.props.defaultLabelFields
-      return {
-        gp_labels: gp_labels.concat(
-          [{...defaultLabelFields, label_name: "", key: getNewKey()}]
-        )
-      }
-    })
-  }
-
   removeLabels = () => {
     let that = this
     const onSuccess = ({ delete_label: { status }}, label) => {
@@ -288,6 +277,17 @@ class Labels extends LabelsBase {
     gp_labels: [],
   }
 
+  addLabel = () => {
+    this.setState(({gp_labels}) => {
+      let { defaultLabelFields } = this.props
+      return {
+        gp_labels: gp_labels.concat(
+          [{...defaultLabelFields, label_name: "", key: getNewKey()}]
+        )
+      }
+    })
+  }
+
   getColumns = () => {
     const renders = {
       'label_name': (text, label) => {
@@ -409,6 +409,17 @@ class SubLabels extends LabelsBase {
       || this.state.gp_labels.some(o => nextState.gp_labels.find(n => {
         return (o.id === n.id && !labelSemanticEq(o, n)) || (!o.id && n.id)
       }))
+  }
+
+  addLabel = () => {
+    this.setState(({gp_labels, defaultLabelFields}) => {
+      defaultLabelFields = defaultLabelFields || this.props.defaultLabelFields
+      return {
+        gp_labels: gp_labels.concat(
+          [{...defaultLabelFields, label_name: "", key: getNewKey()}]
+        )
+      }
+    })
   }
 
   getLabels = (data, parent_label) => {

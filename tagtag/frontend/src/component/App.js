@@ -40,7 +40,7 @@ class App extends Component {
         iconType:"user",
         text: '个人信息'
       },
-      valid_roles: ['default'],
+      valid_roles: ['default', 'manager'],
     }],
   }
   toggle = () => {
