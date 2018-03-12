@@ -1,11 +1,10 @@
 import React, { Component } from 'react'
-import { AUTH_TOKEN } from '../constant'
 import { Redirect } from 'react-router-dom'
 import { withApollo } from 'react-apollo'
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router'
 import gql from 'graphql-tag'
-import { setCurrentUser } from '../actions'
+import { clearCurrentUser } from '../actions'
 import { Button, Input, Form, Row, Col, Select } from 'antd'
 const FormItem = Form.Item
 const Option = Select.Option
@@ -13,7 +12,7 @@ const Option = Select.Option
 class Profile extends Component {
   state = {}
 
-  _add_user() {
+  _modify_user() {
     let register_user_info = this.state.current_user
     register_user_info = {...register_user_info, role: JSON.stringify({
       discourse_role: register_user_info.discourse_role,
@@ -75,14 +74,13 @@ class Profile extends Component {
     }).then(({data, errors}) => {
       if (!errors) {
         let user = data.me;
-        let current_user = {...user, role: JSON.parse(user.role)}
-        this.props.setCurrentUser(current_user)
+        let currentUser = {...user, role: JSON.parse(user.role)}
+        this.setState({ current_user: {...currentUser, ...currentUser.role}})
       }
     })
   }
   _logout () {
-    localStorage.removeItem(AUTH_TOKEN)
-    this.props.setCurrentUser({})
+    this.props.clearCurrentUser({})
   }
   _set_discourse_role({target: {value}}) {
     this.setState(state => ({
@@ -96,6 +94,7 @@ class Profile extends Component {
   }
   render() {
     let current_user = this.state.current_user || {}
+    console.log('current_user: ', current_user)
     return <div>
       <Row gutter={24}>
         <Col span={8}>
@@ -106,9 +105,7 @@ class Profile extends Component {
         </Col>
       </Row>
 
-      <Form
-        className="ant-advanced-search-form"
-      >
+      <Form className="ant-advanced-search-form">
         <Row gutter={24}>
           <h2 className="mv3">修改用户信息</h2>
         </Row>
@@ -117,15 +114,6 @@ class Profile extends Component {
             <FormItem label="邮箱" >
               <Input value={current_user.email} onChange={({target: {value}}) => this.setState(state => ({
                 current_user: {...state.current_user, email: value}
-              }))}/>
-            </FormItem>
-          </Col>
-        </Row>
-        <Row gutter={24}>
-          <Col span={8} style={{display: "block"}} key={2}>
-            <FormItem label="用户名" >
-              <Input value={current_user.username} onChange={({target: {value}}) => this.setState(state => ({
-                current_user: {...state.current_user, username: value}
               }))}/>
             </FormItem>
           </Col>
@@ -169,7 +157,7 @@ class Profile extends Component {
         </Row>
         <Row gutter={24}>
           <Col span={8} style={{display: "block", textAlign: 'right'}} key={5}>
-            <Button type="primary" onClick={this._add_user.bind(this)}>保存</Button>
+            <Button type="primary" onClick={this._modify_user.bind(this)}>保存</Button>
           </Col>
         </Row>
       </Form>
@@ -181,4 +169,4 @@ const mapStateToProps = (state, ownProps) => ({
   currentUser: state.currentUser,
 })
 
-export default withRouter(withApollo(connect(mapStateToProps, {setCurrentUser})(Profile)));
+export default withRouter(withApollo(connect(mapStateToProps, {clearCurrentUser})(Profile)));

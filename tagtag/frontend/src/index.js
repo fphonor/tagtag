@@ -11,7 +11,6 @@ import { ApolloProvider } from 'react-apollo'
 
 import './index.css'
 import App from './component/App'
-import registerServiceWorker from './registerServiceWorker'
 import reducerOfApp from './reducer'
 
 
@@ -31,4 +30,3 @@ ReactDOM.render(
     </ApolloProvider>
   </Provider>,
   document.getElementById('root'))
-registerServiceWorker()
