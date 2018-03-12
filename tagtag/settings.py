@@ -93,10 +93,10 @@ DATABASES = {
     # }
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'HOST': 'localhost',
-        'NAME': 'learning_analysis',
-        'USER': 'pyskell',
-        'PASSWORD': '',
+        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
+        'NAME': os.environ.get('DATABASE_NAME', 'learning_analysis'),
+        'USER': os.environ.get('DATABASE_USER', 'pyskell'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD', ''),
     }
 }
 
@@ -139,4 +139,4 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-JWT_SECRET = 'JWT_SECRET'
+JWT_SECRET = os.environ.get('JWT_SECRET', 'JWT_SECRET')
