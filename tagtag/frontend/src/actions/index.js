@@ -15,6 +15,7 @@ import {
   FIELD_OPTIONS_CLEAN,
   FIELD_SEARCH_FINISHED,
   SET_CURRENT_USER,
+  CLEAR_CURRENT_USER,
   UPDATE_DEFAULT_LABEL_SEARCH_FIELDS,
 } from '../constant/ActionType';
 import { getNewKey } from '../util';
@@ -312,9 +313,16 @@ export const update_label_search_field = (label_earch_fields) => {
   }
 }
 
-export const setCurrentUser = currentUser => {
+export const setCurrentUser = (currentUser, jwt_token) => {
+  if (jwt_token) {
+    return {type: SET_CURRENT_USER, currentUser, jwt_token, }
+  } else {
+    return {type: SET_CURRENT_USER, currentUser, }
+  }
+}
+
+export const clearCurrentUser = currentUser => {
   return {
-    currentUser,
-    type: SET_CURRENT_USER,
+    type: CLEAR_CURRENT_USER,
   }
 }
