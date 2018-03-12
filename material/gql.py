@@ -241,17 +241,17 @@ class Query(graphene.ObjectType):
                 select *
                 from {table_name}
                 where title_ident in %(title_ident__in)s
-                order by title_ident
                 '''.format(**dict(table_name='title_bank')),
                 dict(title_ident__in=tuple([r['title_ident'] for r in es_rows]))
             )
             rows = cur.fetchall()
             dicts = [dict(zip([c.name for c in cur.description], row)) for row in rows]
+            title_idents = [r['title_ident'] for r in es_rows]
             return TitleList(
                 total_num=resp['total_num'],
                 page_size=kwargs['page_size'],
                 page_num=kwargs['page_num'],
-                titles=[Title(**d) for d in dicts]
+                titles=sorted([Title(**d) for d in dicts], key=lambda t: title_idents.index(t.title_ident))
             )
 
     def resolve_gp_courses(self, info, **kwargs):

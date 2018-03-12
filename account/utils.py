@@ -15,11 +15,14 @@ def get_user_(info):
 
 def get_user(info):
     token = info.context.META.get('HTTP_AUTHORIZATION')
-    if token:
-        token = token[len('Bearer '):]
-        user_info = jwt.decode(token, settings.JWT_SECRET)
-        try:
-            user = User.objects.get(token=user_info['token'])
-            return user
-        except Exception:
-            raise Exception('User not found!')
+
+    if not token or not token[len('Bearer '):]:
+        raise Exception('User not found!')
+
+    token = token[len('Bearer '):]
+    user_info = jwt.decode(token, settings.JWT_SECRET)
+    try:
+        user = User.objects.get(token=user_info['token'])
+        return user
+    except Exception:
+        raise Exception('User not found!')
