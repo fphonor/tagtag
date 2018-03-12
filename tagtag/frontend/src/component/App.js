@@ -58,6 +58,9 @@ class App extends Component {
     let currentUser = this.props.currentUser
     console.log('currentUser: ', currentUser)
 
+    let menus = this.state.menus.filter(
+      menu => !currentUser.role || menu.valid_roles.find( x => x === currentUser.role.role)
+    )
     return (
       <Layout style={{height: "100%"}}>
         <Sider
@@ -74,9 +77,7 @@ class App extends Component {
               </Link>
             </Menu.Item>
             {
-              this.state.menus.filter(
-                menu => !currentUser.role || menu.valid_roles.find( x => x === currentUser.role.role)
-              ).map(
+              menus.map(
                 (menu, i) => (
                 <Menu.Item key={i}>
                   <Link to={menu.linkTo}>
