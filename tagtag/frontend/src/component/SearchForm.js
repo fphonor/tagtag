@@ -15,6 +15,17 @@ const formItemLayout = {
   },
 }
 
+const jiaocai_formItemLayout = {
+  labelCol: {
+    xs: { span: 4 },
+    sm: { span: 4 },
+  },
+  wrapperCol: {
+    xs: { span: 20 },
+    sm: { span: 20 },
+  },
+}
+
 class AdvancedSearchForm extends React.Component {
   handleReset () {
     this.props.form.resetFields()
@@ -64,9 +75,13 @@ class AdvancedSearchForm extends React.Component {
   getFields = (formFields) => {
     return formFields.map((f, i) => {
       return (
-        <Col span={Math.floor(24/f.sibling_num)} style={{display: "block"}} key={i}>
+        <Col span={
+            (['平台', '类型'].find(x => x === f.title) && Math.floor(24/(f.sibling_num + 1)))
+            || ('教材' === f.title && Math.floor(24/(f.sibling_num - 1)))
+            || Math.floor(24/f.sibling_num)
+          } style={{display: "block"}} key={i}>
           <FormItem
-            {...formItemLayout}
+            {...(('教材' == f.title && jiaocai_formItemLayout) || formItemLayout)}
             label={f.title}
             hasFeedback
           >
