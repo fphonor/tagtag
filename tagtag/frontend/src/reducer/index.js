@@ -7,6 +7,7 @@ import {
   FETCH_TITLES,
   FETCH_TITLE,
   MODIFY_TITLE,
+  CLEAR_CURRENT_USER,
   SET_CURRENT_USER,
   UPDATE_DEFAULT_LABEL_SEARCH_FIELDS,
 } from '../constant/ActionType'
@@ -80,14 +81,20 @@ const currentTitle = (state = {}, action) => {
 }
 
 const currentUser = (state=JSON.parse(localStorage.getItem(CURRENT_USER)) || {}, action) => {
-  let jwt_token = localStorage.getItem(AUTH_TOKEN)
-  if (!jwt_token) return {}
   switch (action.type) {
     case SET_CURRENT_USER:
+      if (action.jwt_token) {
+        localStorage.setItem(AUTH_TOKEN, action.jwt_token)
+      }
       localStorage.setItem(CURRENT_USER, JSON.stringify(action.currentUser))
       return {...state, ...action.currentUser}
+    case CLEAR_CURRENT_USER:
+      localStorage.removeItem(AUTH_TOKEN)
+      localStorage.removeItem(CURRENT_USER)
+      return {}
     default:
-      return state
+      let jwt_token = localStorage.getItem(AUTH_TOKEN)
+      return jwt_token ? state : {}
   }
 }
 

@@ -234,7 +234,6 @@ class LabelsBase extends React.Component {
       `,
       variables: _label,
     }).then(({ data: { change_label: { label }}})=> {
-      debugger;
       console.log('__modifyLabel: ', label);
       this.setState(({ originLabels, gp_labels }) => {
         return {
@@ -337,7 +336,7 @@ class Labels extends LabelsBase {
     return gp_labels.filter(label => {
       return label.label_level === 1
         && ['skill_type', 'label_type'].every(dataIndex => defaultLabelFields[dataIndex] === label[dataIndex])
-    })
+    }).sort((x, y) => x.id - y.id)
   }
   
   render () {
@@ -417,8 +416,10 @@ class SubLabels extends LabelsBase {
     if (this.state.gp_labels && this.state.gp_labels.length > 0 ) {
       gp_labels = this.state.gp_labels
     } else {
-      gp_labels = data.gp_labels.filter(label => label.parent_id === parent_label.id)
-                            .map(x => ({...x, key: getNewKey()}))
+      gp_labels = data.gp_labels
+        .filter(label => label.parent_id === parent_label.id)
+        .map(x => ({...x, key: getNewKey()}))
+        .sort((x, y) => x.id - y.id)
       this.setState({
         gp_labels,
         originLabels: gp_labels.map(x => ({...x})),

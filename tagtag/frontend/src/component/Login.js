@@ -38,7 +38,7 @@ class Login extends Component {
       if (!errors && data) {
         let { login: { current_user, jwt_token }} = data
         console.log('login OK: ', current_user)
-        this.props.setCurrentUser(current_user, jwt_token)
+        this.props.setCurrentUser({...current_user, role: JSON.parse(current_user.role)}, jwt_token)
         this.setState({login: false})
       } else {
         alert('登录失败: ' + errors.map(x => x.message));
