@@ -1,11 +1,10 @@
 import React, { Component } from 'react'
-import { AUTH_TOKEN } from '../constant'
 import { Redirect } from 'react-router-dom'
 import { withApollo } from 'react-apollo'
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router'
 import gql from 'graphql-tag'
-import { setCurrentUser } from '../actions'
+import { setCurrentUser, clearCurrentUser } from '../actions'
 import { Button, Input, Form, Row, Col, Select } from 'antd'
 const FormItem = Form.Item
 const Option = Select.Option
@@ -39,8 +38,7 @@ class Login extends Component {
       if (!errors && data) {
         let { login: { current_user, jwt_token }} = data
         console.log('login OK: ', current_user)
-        this.props.setCurrentUser(current_user)
-        this._saveJWT(jwt_token)
+        this.props.setCurrentUser(current_user, jwt_token)
         this.setState({login: false})
       } else {
         alert('登录失败: ' + errors.map(x => x.message));
@@ -112,12 +110,8 @@ class Login extends Component {
       }
     })
   }
-  _saveJWT = token => {
-    localStorage.setItem(AUTH_TOKEN, token)
-  }
   _logout () {
-    localStorage.removeItem(AUTH_TOKEN)
-    this.props.setCurrentUser({})
+    this.props.clearCurrentUser()
   }
   _set_discourse_role(opt) {
     let key = opt.key
@@ -131,9 +125,7 @@ class Login extends Component {
     if (this.props.currentUser && this.props.currentUser.token) {
       return <div>
         { this.props.currentUser.role.role === 'manager' &&
-        <Form
-          className="ant-advanced-search-form"
-        >
+        <Form className="ant-advanced-search-form">
           <Row gutter={24}>
             <h2 className="mv3">添加新用户</h2>
           </Row>
@@ -244,4 +236,4 @@ const mapStateToProps = (state, ownProps) => ({
   currentUser: state.currentUser,
 })
 
-export default withRouter(withApollo(connect(mapStateToProps, {setCurrentUser})(Login)));
+export default withRouter(withApollo(connect(mapStateToProps, {setCurrentUser, clearCurrentUser})(Login)));
