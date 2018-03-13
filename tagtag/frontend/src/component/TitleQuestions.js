@@ -23,11 +23,14 @@ const labels_query_params = (value) => {
   }
 }
 
+SKILL_TYPES = {'阅读': 'YD', '听力': 'TL'}
+
 const AUTO_COMPLETE_HANDLERS = {
   skill_level_1: {
     query_params: labels_query_params,
-    options_builder: ({data: {gp_labels}}, value, question) => {
+    options_builder: ({data: {gp_labels}}, value, question, title) => {
       return gp_labels
+        .filter(x => x.skill_type === SKILL_TYPES[title.title_category])
         .filter(x => x.label_level === 1 && x.label_type === 'WJN')
         .map(x => ({value: "" + x.id, text: x.label_name}))
         .filter(x => !value || x.text.indexOf(value) !== -1)
@@ -35,9 +38,10 @@ const AUTO_COMPLETE_HANDLERS = {
   },
   skill_level_2: {
     query_params: labels_query_params,
-    options_builder: ({data: {gp_labels}}, value, question) => {
+    options_builder: ({data: {gp_labels}}, value, question, title) => {
       let skill_level_1 = gp_labels.find(x => x.id === question.skill_level_1)
       return gp_labels
+        .filter(x => x.skill_type === SKILL_TYPES[title.title_category])
         .filter(x => x.label_level === 2 && x.label_type === 'WJN')
         .filter(x => skill_level_1 ? skill_level_1.id === x.parent_id : true)
         .map(x => ({value: "" + x.id, text: x.label_name}))
@@ -46,8 +50,9 @@ const AUTO_COMPLETE_HANDLERS = {
   },
   content_level_1: {
     query_params: labels_query_params,
-    options_builder: ({data: {gp_labels}}, value, question) => {
+    options_builder: ({data: {gp_labels}}, value, question, title) => {
       return gp_labels
+        .filter(x => x.skill_type === SKILL_TYPES[title.title_category])
         .filter(x => x.label_level === 1 && x.label_type === 'NRKJ')
         .map(x => ({value: "" + x.id, text: x.label_name}))
         .filter(x => !value || x.text.indexOf(value) !== -1)
@@ -55,9 +60,10 @@ const AUTO_COMPLETE_HANDLERS = {
   },
   content_level_2: {
     query_params: labels_query_params,
-    options_builder: ({data: {gp_labels}}, value, question) => {
+    options_builder: ({data: {gp_labels}}, value, question, title) => {
       let content_level_1 = gp_labels.find(x => x.id === question.content_level_1)
       return gp_labels
+        .filter(x => x.skill_type === SKILL_TYPES[title.title_category])
         .filter(x => x.label_level === 2 && x.label_type === 'NRKJ')
         .filter(x => content_level_1 ? content_level_1.id === x.parent_id : true)
         .map(x => ({value: "" + x.id, text: x.label_name}))
@@ -129,7 +135,7 @@ const on_search_of_field = (that, dataIndex, question, questions, fieldList) => 
       that.setState(({ questions_options }) => {
         questions_options[questions.indexOf(question)] = {
           ...questions_options[questions.indexOf(question)],
-          [dataIndex]: AUTO_COMPLETE_HANDLERS[dataIndex].options_builder(response, value, question),
+          [dataIndex]: AUTO_COMPLETE_HANDLERS[dataIndex].options_builder(response, value, question, that.props.title),
         }
         return { questions_options }
       })
