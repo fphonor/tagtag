@@ -734,10 +734,10 @@ class Discourse extends React.Component {
         </Row>
         <Row>
           <Col span={6} style={{ textAlign: 'center' }}>
-            <Button onClick={this.saveDiscourse} disabled={discourse.review_status === '评审通过' || currentUser.role.discourse_role !== "discourse_tagger" }>保存</Button>
+            <Button onClick={this.saveDiscourse} disabled={discourse.review_status === '评审通过'}>保存</Button>
           </Col>
           <Col span={6} style={{ textAlign: 'right' }}>
-            <Button type="primary" onClick={this.passReview} disabled={discourse.review_status === '评审通过' || currentUser.role.discourse_role !== "discourse_reviewer" }>评审通过</Button>
+            <Button type="primary" onClick={this.passReview} disabled={discourse.review_status === '评审通过'}>评审通过</Button>
           </Col>
         </Row>
         <Row style={{ marginTop: "15px" }}>
@@ -746,13 +746,13 @@ class Discourse extends React.Component {
               style={{width: "96%", height: "100%"}}
               value={discourse.review_fail_reason || ""}
               onChange={this.handleFieldChange('review_fail_reason')}
-              disabled={discourse.review_status === '评审通过' || currentUser.role.discourse_role !== "discourse_reviewer" }
+              disabled={discourse.review_status === '评审通过'}
               >
             </textarea>
           </Col>
           <Col span={3} style={{ textAlign: 'left' }}>
             <Button type="primary" onClick={this.notPassReview}
-              disabled={discourse.review_status === '评审通过' || currentUser.role.discourse_role !== "discourse_reviewer" }>评审不通过</Button>
+              disabled={discourse.review_status === '评审通过'}>评审不通过</Button>
           </Col>
         </Row>
       </Form>
