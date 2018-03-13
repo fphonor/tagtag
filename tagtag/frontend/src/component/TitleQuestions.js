@@ -153,7 +153,7 @@ const questionSemanticEq = (x, y) => {
 }
 
 const handleGqlResp = (operation, info_prefix='操作')  => ({data, errors}) => {
-  if (errors) {
+  if ((Array.isArray(errors) && errors.length) || (!Array.isArray(errors) && errors)) {
     alert(`${info_prefix}不成功: ` + errors.map(x => x.message))
     console.log(`${operation} ERROR:`, errors)
   } else {
@@ -329,7 +329,7 @@ class QuestionsBase extends React.Component {
           let errors = resp.map(({errors}) => errors)
           handleGqlResp('deleteQuestions', '删除')({
             data,
-            errors: (errors.every(x => x) && { message: errors.map(x => x.message) }) || undefined,
+            errors: (errors.every(x => x) && errors) || undefined,
           })
         })
   }
