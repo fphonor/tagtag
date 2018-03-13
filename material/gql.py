@@ -292,6 +292,8 @@ class DeleteLabel(graphene.Mutation):
 
     def mutate(self, info, **kwargs):
         table_name = 'label_dict'
+        if get_sub_labels(kwargs['id']):
+            raise Exception('请先删除该标签下的子标签')
         return delete_mutate(DeleteLabel, table_name, Label, kwargs, info)
 
 
@@ -699,6 +701,21 @@ def get_labels(label_ids):
             where id in %(label_ids)s
             '''.format(**dict(table_name='label_dict')),
             dict(label_ids=tuple(label_ids))
+        )
+        rows = cur.fetchall()
+        dicts = [dict(zip([c.name for c in cur.description], row)) for row in rows]
+        return [Label(**d) for d in dicts]
+
+
+def get_sub_labels(label_id):
+    with utils.get_conn().cursor() as cur:
+        cur.execute(
+            '''
+            select *
+            from {table_name}
+            where parent_id = %(label_id)s
+            '''.format(**dict(table_name='label_dict')),
+            dict(label_id=label_id)
         )
         rows = cur.fetchall()
         dicts = [dict(zip([c.name for c in cur.description], row)) for row in rows]
