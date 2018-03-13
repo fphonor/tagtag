@@ -116,22 +116,22 @@ const titles = bindListNameWithSearchFormFields({
       title: '语篇标注状态',
       type: 'select',
       dataIndex: 'tag_status',
-      options:[{value: "待修改", text: "待修改"},{value: "已标注", text: "已标注"}, {value: "未标注", text: "未标注"}]
+      options:[{value: "", text: "----"}, {value: "待修改", text: "待修改"},{value: "已标注", text: "已标注"}, {value: "未标注", text: "未标注"}]
     }, {
       title: '语篇评审状态',
       type: 'select',
       dataIndex: 'review_status',
-      options:[{value: "未评审", text: "未评审"},{value: "评审通过", text: "评审通过"}, {value: "评审未通过", text: "评审未通过"}]
+      options:[{value: "", text: "----"}, {value: "未评审", text: "未评审"},{value: "评审通过", text: "评审通过"}, {value: "评审未通过", text: "评审未通过"}]
     }, {
       title: '微技能标注状态',
       type: 'select',
       dataIndex: 'label_tag_status',
-      options:[{value: "待修改", text: "待修改"},{value: "已标注", text: "已标注"}, {value: "未标注", text: "未标注"}]
+      options:[{value: "", text: "----"}, {value: "待修改", text: "待修改"},{value: "已标注", text: "已标注"}, {value: "未标注", text: "未标注"}]
     }, {
       title: '微技能评审状态',
       type: 'select',
       dataIndex: 'label_review_status',
-      options:[{value: "未评审", text: "未评审"},{value: "评审通过", text: "评审通过"}, {value: "评审未通过", text: "评审未通过"}]
+      options:[{value: "", text: "----"}, {value: "未评审", text: "未评审"},{value: "评审通过", text: "评审通过"}, {value: "评审未通过", text: "评审未通过"}]
     }], [{
       title: '语篇标注人 ',
       type: 'select-dynamic',
