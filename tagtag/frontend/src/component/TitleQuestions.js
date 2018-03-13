@@ -23,7 +23,7 @@ const labels_query_params = (value) => {
   }
 }
 
-SKILL_TYPES = {'阅读': 'YD', '听力': 'TL'}
+const SKILL_TYPES = {'阅读': 'YD', '听力': 'TL'}
 
 const AUTO_COMPLETE_HANDLERS = {
   skill_level_1: {
@@ -43,7 +43,7 @@ const AUTO_COMPLETE_HANDLERS = {
       return gp_labels
         .filter(x => x.skill_type === SKILL_TYPES[title.title_category])
         .filter(x => x.label_level === 2 && x.label_type === 'WJN')
-        .filter(x => skill_level_1 ? skill_level_1.id === x.parent_id : true)
+        .filter(x => skill_level_1 ? skill_level_1.id === x.parent_id : false)
         .map(x => ({value: "" + x.id, text: x.label_name}))
         .filter(x => !value || x.text.indexOf(value) !== -1)
     }
@@ -65,7 +65,7 @@ const AUTO_COMPLETE_HANDLERS = {
       return gp_labels
         .filter(x => x.skill_type === SKILL_TYPES[title.title_category])
         .filter(x => x.label_level === 2 && x.label_type === 'NRKJ')
-        .filter(x => content_level_1 ? content_level_1.id === x.parent_id : true)
+        .filter(x => content_level_1 ? content_level_1.id === x.parent_id : false)
         .map(x => ({value: "" + x.id, text: x.label_name}))
         .filter(x => !value || x.text.indexOf(value) !== -1)
     }
