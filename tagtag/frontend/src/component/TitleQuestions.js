@@ -142,8 +142,6 @@ const IMPORTANT_FIELDS = [
   'question_index',
   'skill_level_1',
   'skill_level_2',
-  'content_level_1',
-  'content_level_2',
 ];
 
 const questionSemanticEq = (x, y) => {
@@ -525,19 +523,19 @@ class TitleQuestions extends QuestionsBase {
         <Row>
           <Col span={5} style={{ textAlign: 'right' }}>
             <Button type="primary" onClick={this.saveQuestions}
-              disabled={title.label_review_status === '评审通过' || this.props.currentUser.role.skill_role!== "skill_tagger" }>保存</Button>
+              disabled={title.label_review_status === '评审通过'}>保存</Button>
           </Col>
           <Col span={5} style={{ textAlign: 'right' }}>
             <Button type="primary" onClick={this.removeQuestions}
-              disabled={title.label_review_status === '评审通过' || this.props.currentUser.role.skill_role!== "skill_tagger" }>删除</Button>
+              disabled={title.label_review_status === '评审通过'}>删除</Button>
           </Col>
           <Col span={5} style={{ textAlign: 'right' }}>
             <Button type="primary" onClick={this.addTempQuestion}
-              disabled={title.label_review_status === '评审通过' || this.props.currentUser.role.skill_role!== "skill_tagger" }>新增</Button>
+              disabled={title.label_review_status === '评审通过'}>新增</Button>
           </Col>
           <Col span={5} style={{ textAlign: 'right' }}>
             <Button type="primary" onClick={this.passReview}
-              disabled={title.label_review_status === '评审通过' || this.props.currentUser.role.skill_role !== "skill_reviewer" }>评审通过</Button>
+              disabled={title.label_review_status === '评审通过'}>评审通过</Button>
           </Col>
         </Row>
         <Row style={{ marginTop: "15px" }}>
@@ -547,14 +545,12 @@ class TitleQuestions extends QuestionsBase {
               value={this.state.title.review_fail_reason}
               disabled={
                 title.label_review_status === '评审通过'
-                || this.props.currentUser.role.skill_role !== "skill_reviewer"
               }></textarea>
           </Col>
           <Col span={3} style={{ textAlign: 'left' }}>
             <Button type="primary" onClick={this.notPassReview}
               disabled={
                 title.label_review_status === '评审通过' 
-                || this.props.currentUser.role.skill_role !== "skill_reviewer"
               }>评审不通过</Button>
           </Col>
         </Row>
