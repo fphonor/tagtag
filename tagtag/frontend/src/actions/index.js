@@ -229,7 +229,7 @@ const SEARCH_CONF = {
         return gp_labels
           .filter(x => x.label_level === 2 && x.label_type === 'WJN')
           .filter(x => {
-            return skill_level_1.value ? skill_level_1.value.find(y => parseInt(y.key, 10) === x.parent_id) : true
+            return skill_level_1.value ? skill_level_1.value.find(y => parseInt(y.key, 10) === x.parent_id) : false
           })
           .map(x => ({value: x.id, text: x.label_name}))
       }
@@ -249,7 +249,7 @@ const SEARCH_CONF = {
         return gp_labels
           .filter(x => x.label_level === 2 && x.label_type === 'NRKJ')
           .filter(x => {
-            return content_level_1.value ? content_level_1.value.find(y => parseInt(y.key, 10) === x.parent_id) : true
+            return content_level_1.value ? content_level_1.value.find(y => parseInt(y.key, 10) === x.parent_id) : false
           })
           .map(x => ({value: x.id, text: x.label_name, parent_id: x.parent_id}))
       }
