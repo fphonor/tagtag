@@ -180,7 +180,7 @@ class TitleList extends React.Component {
       return Object.assign({}, ...fs.map(f => {
           var val = "";
           if (Array.isArray(f.value)) {
-            val = f.value.length === 0 ? val : f.value[0].key
+            val = f.value.length === 0 ? val : f.value[0].label
           } else {
             val = f.value ? f.value : val
           }

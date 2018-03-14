@@ -15,9 +15,9 @@ class Profile extends Component {
   _modify_user() {
     let register_user_info = this.state.current_user
     register_user_info = {...register_user_info, role: JSON.stringify({
+      ...register_user_info.role,
       discourse_role: register_user_info.discourse_role,
       skill_role: register_user_info.skill_role,
-      role: 'default',
     })}
     let {setCurrentUser} = this.props
     this.props.client.mutate({
