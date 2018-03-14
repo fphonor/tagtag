@@ -223,8 +223,10 @@ class Query(graphene.ObjectType):
     def resolve_gp_titles(self, info, title_ident__in=None, **kwargs):
         url = 'http://54.223.130.63:5000/getEsInfo'
         import requests
+        print(kwargs)
         resp = requests.post(url, data=kwargs).json()
         es_rows = resp['result']
+        # import pdb; pdb.set_trace()
         # resp = {'total_num': 4, 'page_size': 4, 'page_num': 1}
         # es_rows = [{'title_ident': 'u3_9'}, {'title_ident': 'u3_10'}, {'title_ident': 'u3_2'}, {'title_ident': 'u3_7'}, ]
         with utils.get_conn().cursor() as cur:
@@ -355,6 +357,8 @@ def update_question_status_to_es(title_ident):
             question[field] = label.label_name if label else ""
 
         for question in questions:
+            question.pop('id')
+            question.pop('title_ident')
             for field in IMPORTANT_FIELDS:
                 update_question_tags(question, field)
 
