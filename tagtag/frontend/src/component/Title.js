@@ -873,12 +873,13 @@ class Title extends React.Component {
     let { title } = this.state
     let { title: { discourse, questions } } = this.state
     return (
+      <div>
       <Row style={{width: "100%", height: "100%"}}>
-        <Col span={this.state.iframeShow ? 12 : 0}>
-          <iframe src={title.title_url} style={{width: "100%", height: "100%"}} title="iframe content"/>
-        </Col>
+        <a href={title.title_url} target="question_detail">查看题目详情</a>
+      </Row>
+      <Row style={{width: "100%", height: "100%"}}>
         <Col span={this.state.iframeShow ? 12 : 24}>
-          <h1 onClick={this.toggleIFrame}>题目详细路径：{ title.title_detail_path }</h1>
+          <h1>题目详细路径：{ title.title_detail_path }</h1>
           <Tabs defaultActiveKey="1">
             <TabPane tab="语篇标注" key="1" forceRender={true}>
               <TagWrappedDiscoure title={title} discourse={discourse}/>
@@ -889,6 +890,7 @@ class Title extends React.Component {
           </Tabs>
         </Col>
       </Row>
+      </div>
     )
   }
 }
