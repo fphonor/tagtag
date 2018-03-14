@@ -212,7 +212,7 @@ class QuestionsBase extends React.Component {
     }
     let modified_questions = this.__getModifiedQuestions()
     if (modified_questions.length === 0) {
-      alert('微技能标注 -> 题目列表: 长度为0')
+      alert('没有可保存的题目。(题目的必填项为：问题序号、微技能一级标签、微技能二级标签)')
       return
     }
     await Promise.all(
