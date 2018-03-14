@@ -136,6 +136,8 @@ const users_query_params = (value) => ({
   variables: { nameLike: value },
 })
 
+const SKILL_TYPES = {'阅读': 'YD', '听力': 'TL'}
+
 const SEARCH_CONF = {
   titles: {
     title_course: {
@@ -217,7 +219,9 @@ const SEARCH_CONF = {
     skill_level_1: {
       query_params: labels_query_params,
       options_builder: ({data: {gp_labels}}, value, fieldList) => {
+        let title_category = fieldList.find(x => x.dataIndex ==="title_category")
         return gp_labels
+          .filter(x => x.skill_type === SKILL_TYPES[title_category.value])
           .filter(x => x.label_level === 1 && x.label_type === 'WJN')
           .map(x => ({value: x.id, text: x.label_name}))
       }
@@ -226,7 +230,9 @@ const SEARCH_CONF = {
       query_params: labels_query_params,
       options_builder: ({data: {gp_labels}}, value, fieldList) => {
         let skill_level_1 = fieldList.find(x => x.dataIndex === 'skill_level_1')
+        let title_category = fieldList.find(x => x.dataIndex ==="title_category")
         return gp_labels
+          .filter(x => x.skill_type === SKILL_TYPES[title_category.value])
           .filter(x => x.label_level === 2 && x.label_type === 'WJN')
           .filter(x => {
             return skill_level_1.value ? skill_level_1.value.find(y => parseInt(y.key, 10) === x.parent_id) : false
@@ -236,8 +242,10 @@ const SEARCH_CONF = {
     },
     content_level_1: {
       query_params: labels_query_params,
-      options_builder: ({data: {gp_labels}}) => {
+      options_builder: ({data: {gp_labels}}, value, fieldList) => {
+        let title_category = fieldList.find(x => x.dataIndex ==="title_category")
         return gp_labels
+          .filter(x => x.skill_type === SKILL_TYPES[title_category.value])
           .filter(x => x.label_level === 1 && x.label_type === 'NRKJ')
           .map(x => ({value: x.id, text: x.label_name}))
       }
@@ -246,7 +254,9 @@ const SEARCH_CONF = {
       query_params: labels_query_params,
       options_builder: ({data: {gp_labels}}, value, fieldList) => {
         let content_level_1 = fieldList.find(x => x.dataIndex === 'content_level_1')
+        let title_category = fieldList.find(x => x.dataIndex ==="title_category")
         return gp_labels
+          .filter(x => x.skill_type === SKILL_TYPES[title_category.value])
           .filter(x => x.label_level === 2 && x.label_type === 'NRKJ')
           .filter(x => {
             return content_level_1.value ? content_level_1.value.find(y => parseInt(y.key, 10) === x.parent_id) : false
