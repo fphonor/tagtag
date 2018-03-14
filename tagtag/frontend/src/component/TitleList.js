@@ -188,7 +188,7 @@ class TitleList extends React.Component {
         })
       )
     }))
-    variables = {...variables, page_num: "1", page_size: "3"}
+    variables = {...variables, page_num: "1", page_size: "10"}
     this.setState({variables})
     this.fetch(variables)
   }
