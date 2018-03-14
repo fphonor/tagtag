@@ -351,7 +351,7 @@ def update_question_status_to_es(title_ident):
 
         def update_question_tags(question, field):
             label_id = question.get(field)
-            label = next(filter(lambda x: x.id == int(label_id), labels), None)
+            label = next(filter(lambda x: x.id == int(label_id) if label_id else None, labels), None)
             question[field] = label.label_name if label else ""
 
         for question in questions:
@@ -700,7 +700,7 @@ def get_labels(label_ids):
             from {table_name}
             where id in %(label_ids)s
             '''.format(**dict(table_name='label_dict')),
-            dict(label_ids=tuple(label_ids))
+            dict(label_ids=tuple(map(int,  filter(lambda x: x, label_ids))))
         )
         rows = cur.fetchall()
         dicts = [dict(zip([c.name for c in cur.description], row)) for row in rows]
