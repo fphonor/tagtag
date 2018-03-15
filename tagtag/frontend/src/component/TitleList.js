@@ -12,6 +12,9 @@ import { client } from '../graphql'
 
 const FormItem = Form.Item
 
+const open_title_window = (title_ident) => {
+  window.open("/titles/" + title_ident, "title")
+}
 
 class TitleList extends React.Component {
   state = {
@@ -20,9 +23,7 @@ class TitleList extends React.Component {
         title: '题目编号',
         dataIndex: 'title_ident',
         render: (text, record) => (
-          <Link to={"/titles/" + text}>
-            <Button type="danger" >{text}</Button>
-          </Link>
+          <Button type="danger" onClick={() => open_title_window(record.title_ident)}>{text}</Button>
         )
       }, {
         title: '教材',
@@ -173,7 +174,7 @@ class TitleList extends React.Component {
       return Object.assign({}, ...fs.map(f => {
           var val = "";
           if (Array.isArray(f.value)) {
-            val = f.value.length === 0 ? val : f.value[0].key
+            val = f.value.length === 0 ? val : (f.dataIndex.endsWith('_user') ? f.value[0].label : f.value[0].key)
           } else {
             val = f.value ? f.value : val
           }

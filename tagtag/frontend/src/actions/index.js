@@ -317,6 +317,7 @@ export const on_change_of_field = (listName, dataIndex, fieldList) => (dispatch,
       let origin_value = field.value
       let dvalue = []
       if (origin_value && origin_value[0]) {
+        // eslint-disable-next-line
         let real_value = value.filter(x => x.key != origin_value[0].key)
         if (real_value && real_value[0]) {
           dvalue = real_value

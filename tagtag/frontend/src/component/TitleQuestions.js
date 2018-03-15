@@ -121,6 +121,7 @@ const on_change_of_field = (that, dataIndex, question, questions) => {
     let get_new_field_value = (question, dataIndex, value) => {
       let origin_value = question[dataIndex]
       if (origin_value) {
+        // eslint-disable-next-line
         let real_value = value.filter(x => x.key != origin_value)
         if (real_value && real_value[0]) {
           return real_value[0].key
