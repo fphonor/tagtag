@@ -262,7 +262,6 @@ class Query(graphene.ObjectType):
     def resolve_gp_titles(self, info, title_ident__in=None, **kwargs):
         url = 'http://54.223.130.63:5000/getEsInfo'
         import requests
-        print(kwargs)
         resp = requests.post(url, data=kwargs).json()
         es_rows = resp['result']
         return TitleList(
@@ -275,7 +274,6 @@ class Query(graphene.ObjectType):
     def resolve_gp_titles2(self, info, title_ident__in=None, **kwargs):
         url = 'http://54.223.130.63:5000/getEsInfo'
         import requests
-        print(kwargs)
         resp = requests.post(url, data=kwargs).json()
         es_rows = resp['result']
         # import pdb; pdb.set_trace()
@@ -329,7 +327,6 @@ class ChangeLabel(graphene.Mutation):
 
     def mutate(self, info, **kwargs):
         table_name = 'label_dict'
-        print(self)
         return _mutate(ChangeLabel, "label", table_name, Label, kwargs, info)
 
 
@@ -410,6 +407,7 @@ def update_question_status_to_es(title_ident):
             # 点击 评审通过 按钮时，传入如下参数：
             updateMap["label_review_status"] = title.label_review_status
             updateMap["label_review_user"] = title.label_review_user
+        
         res = update_question_status(updateMap)
         return res
 
@@ -902,9 +900,6 @@ def _mutate(MutationClass, res_field_name, table_name, Class, kwargs, info, pk='
             kwargs
         )
         row = cur.fetchone()
-        print({
-            res_field_name: Class(**dict(zip([c.name for c in cur.description], row)))
-        })
         return MutationClass(
             **{
                 res_field_name: Class(**dict(zip([c.name for c in cur.description], row)))

@@ -311,8 +311,8 @@ class QuestionsBase extends React.Component {
       && Promise.all(checked_questions.filter(x => x.id).map(question => {
           return client.mutate({
             mutation: gql`
-              mutation DeleteQuestion($id: Int!) {
-                delete_question(id: $id) {
+              mutation DeleteQuestion($id: Int!, $title_ident: String!) {
+                delete_question(id: $id, title_ident: $title_ident) {
                   status
                 }
               }
