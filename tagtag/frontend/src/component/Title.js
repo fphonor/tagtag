@@ -222,10 +222,8 @@ class Discourse extends React.Component {
       variables: this.state.discourse
     })
     if (errors) {
-      alert("推送标注不成功: " + errors.map(x => x.message))
       console.log('push_discourse ERROR:', errors)
     } else {
-      alert("推送标注成功")
       console.log('push_discourse OK:', data)
       this.setState({ discourse: data.push_discourse.discourse })
     }
