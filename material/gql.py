@@ -1,6 +1,5 @@
 import graphene
 import utils
-import itertools
 
 from account.utils import get_user
 from .es import update_question_status, update_discourse_status
@@ -342,25 +341,10 @@ def update_question_status_to_es(title_ident):
         )
         rows = cur.fetchall()
         questions = [dict(zip([c.name for c in cur.description], r)) for r in rows]
-        IMPORTANT_FIELDS = [
-            'skill_level_1',
-            'skill_level_2',
-            'content_level_1',
-            'content_level_2',
-        ]
-        label_ids = set(itertools.chain(*map(lambda x: map(lambda f: x[f], IMPORTANT_FIELDS), questions)))
-        labels = get_labels(label_ids)
-
-        def update_question_tags(question, field):
-            label_id = question.get(field)
-            label = next(filter(lambda x: x.id == int(label_id) if label_id else None, labels), None)
-            question[field] = label.label_name if label else ""
 
         for question in questions:
             question.pop('id')
             question.pop('title_ident')
-            for field in IMPORTANT_FIELDS:
-                update_question_tags(question, field)
 
         updateMap = dict(
             # 必传参数

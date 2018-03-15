@@ -72,8 +72,6 @@ def export_question_details(req):
     print('-' * 50)
     print(params)
     print('-' * 50)
-    import pdb
-    pdb.set_trace()
     url = 'http://54.223.130.63:5000/export'
     r = requests.post(url, data=params).json()
     CSV_FIELD_NAMES = [
