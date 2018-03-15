@@ -126,11 +126,27 @@ class Title(graphene.ObjectType):
             return [Question(**d) for d in dicts]
 
 
+class TitleRow(graphene.ObjectType):
+    id = graphene.Int()
+    title_ident = graphene.String()
+    title_detail_path = graphene.String()
+    title_course = graphene.String()
+    discourse_tag_user = graphene.String()
+    tag_status = graphene.String()
+    discourse_review_user = graphene.String()
+    review_status = graphene.String()
+    label_tag_user = graphene.String()
+    label_tag_status = graphene.String()
+    label_review_user = graphene.String()
+    label_review_status = graphene.String()
+    title_category = graphene.String()
+
+
 class TitleList(graphene.ObjectType):
     total_num = graphene.Int()
     page_num = graphene.Int()
     page_size = graphene.Int()
-    titles = graphene.List(Title)
+    titles = graphene.List(TitleRow)
 
 
 def update_titles(**kwargs):
@@ -162,6 +178,30 @@ class Query(graphene.ObjectType):
         parent_id = graphene.Int(),
     )
     gp_titles = graphene.Field(
+        TitleList,
+        title_ident__in=graphene.List(graphene.String),
+        platform=graphene.String(), #平台
+        title_type=graphene.String(), #类型
+        title_course=graphene.String(), #教材
+        unit_id=graphene.String(), #单元
+        title_category=graphene.String(), #语言技能
+        title_info=graphene.String(), #语篇关键字
+        tag_status=graphene.String(), #语篇标注状态
+        review_status=graphene.String(), #语篇评审状态
+        label_tag_status=graphene.String(), #微技能标注状态
+        label_review_status=graphene.String(), #微技能评审状态
+        label_tag_user=graphene.String(), #微技能标注人
+        label_review_user=graphene.String(), #微技能评审人
+        discourse_tag_user=graphene.String(), #语篇标注人
+        discourse_review_user=graphene.String(), #语篇评审人
+        skill_level_1=graphene.String(), #一级微技能
+        skill_level_2=graphene.String(), #二级微技能
+        content_level_1=graphene.String(), #一级内容标签
+        content_level_2=graphene.String(), #二级内容标签
+        page_num=graphene.String(), #分页数
+        page_size=graphene.String(), #每页显示数量
+    )
+    gp_titles2 = graphene.Field(
         TitleList,
         title_ident__in=graphene.List(graphene.String),
         platform=graphene.String(), #平台
@@ -220,6 +260,19 @@ class Query(graphene.ObjectType):
             return [Title(**d) for d in dicts][0]
 
     def resolve_gp_titles(self, info, title_ident__in=None, **kwargs):
+        url = 'http://54.223.130.63:5000/getEsInfo'
+        import requests
+        print(kwargs)
+        resp = requests.post(url, data=kwargs).json()
+        es_rows = resp['result']
+        return TitleList(
+            total_num=resp['total_num'],
+            page_size=kwargs['page_size'],
+            page_num=kwargs['page_num'],
+            titles=[TitleRow(**d) for d in es_rows],
+        )
+
+    def resolve_gp_titles2(self, info, title_ident__in=None, **kwargs):
         url = 'http://54.223.130.63:5000/getEsInfo'
         import requests
         print(kwargs)

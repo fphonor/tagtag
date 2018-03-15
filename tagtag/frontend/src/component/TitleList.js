@@ -26,22 +26,22 @@ class TitleList extends React.Component {
         )
       }, {
         title: '教材',
-        dataIndex: 'tutorial_name',
+        dataIndex: 'title_course',
       }, {
         title: '题目详细路径',
         dataIndex: 'title_detail_path',
       }, {
         title: '语篇标注人',
-        dataIndex: 'discourse.discourse_tag_user',
+        dataIndex: 'discourse_tag_user',
       }, {
         title: '语篇标注状态',
-        dataIndex: 'discourse.tag_status',
+        dataIndex: 'tag_status',
       }, {
         title: '语篇评审人',
-        dataIndex: 'discourse.discourse_review_user',
+        dataIndex: 'discourse_review_user',
       }, {
         title: '语篇评审状态',
-        dataIndex: 'discourse.review_status',
+        dataIndex: 'review_status',
       }, {
         title: '微技能标注人',
         dataIndex: 'label_tag_user',
@@ -123,26 +123,19 @@ class TitleList extends React.Component {
             page_num
             total_num
             titles {
-              platform
+              id
               title_ident
-              tutorial_name
               title_detail_path
-              title_info
-              title_type
-              title_category
-              title_url
-              minicoz_name
-              discourse {
-                discourse_code
-                tag_status
-                discourse_tag_user
-                review_status
-                discourse_review_user
-              }
+              title_course
+              discourse_tag_user
+              tag_status
+              discourse_review_user
+              review_status
               label_tag_user
               label_tag_status
               label_review_user
               label_review_status
+              title_category
             }
           }
         }
