@@ -17,10 +17,12 @@ from django.conf.urls import include, url
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import admin
 from graphene_django.views import GraphQLView
+from material.views import export_question_details
 
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    url('^graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    url('^export/question_details/', export_question_details),
     url(r'^account/', include('account.urls')),
 ]

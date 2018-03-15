@@ -164,7 +164,7 @@ class TitleList extends React.Component {
   }
 
   exportTitles() {
-    alert("正在开发中....")
+    window.open("/export/question_details/?query_params=" + encodeURI(JSON.stringify(this._get_variables())), "_blank")
   }
 
   handle_title_info_change= ({target: {value}}) => {
@@ -175,12 +175,12 @@ class TitleList extends React.Component {
     alert("正在开发中....")
   }
 
-  searchTitles() {
+  _get_variables() {
     let variables = Object.assign(this.state.variables, ...this.props.searchFormFields.map(fs => {
       return Object.assign({}, ...fs.map(f => {
           var val = "";
           if (Array.isArray(f.value)) {
-            val = f.value.length === 0 ? val : f.value[0].label
+            val = f.value.length === 0 ? val : f.value[0].key
           } else {
             val = f.value ? f.value : val
           }
@@ -188,6 +188,11 @@ class TitleList extends React.Component {
         })
       )
     }))
+    return variables
+  }
+
+  searchTitles() {
+    let variables = this._get_variables()
     variables = {...variables, page_num: "1", page_size: "10"}
     this.setState({variables})
     this.fetch(variables)
@@ -233,7 +238,7 @@ class TitleList extends React.Component {
           <Button type="primary" onClick={this.searchTitles.bind(this)}>搜索</Button>
         </Col>
         <Col span={4} style={{ textAlign: 'left' }}>
-          <Button type="primary" onClick={this.exportTitles}>导出统计</Button>
+          <Button type="primary" onClick={this.exportTitles.bind(this)}>导出明细</Button>
         </Col>
         <Col span={4} style={{ textAlign: 'left' }}>
           <Button type="primary" onClick={this.showStatistics}>统计</Button>
