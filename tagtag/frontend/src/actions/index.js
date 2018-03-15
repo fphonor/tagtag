@@ -293,14 +293,51 @@ export const on_search_of_field = (listName, dataIndex, fieldList) => (dispatch,
 
 export const on_change_of_field = (listName, dataIndex, fieldList) => (dispatch, getState) => {
   return value => {
-    console.log('on_change_of_field', fieldList, listName, dataIndex, value)
-    dispatch({
-      type: FIELD_ON_CHANGE,
-      listName,
-      dataIndex,
-      value,
-      //options: [],
-    })
+    console.log('on_change_of_field', fieldList, listName, dataIndex, value, getState())
+    const find_field = (listName, dataIndex) => {
+      let list = getState().searchFormFields[listName]
+      if (Array.isArray(list[0])) {
+        for (let xs of list) {
+          for (let x of xs) {
+            if (x.dataIndex === dataIndex) {
+              return x
+            }
+          }
+        }
+      } else {
+        for (let x of list) {
+          if (x.dataIndex === dataIndex) {
+            return x
+          }
+        }
+      }
+    }
+    let field = find_field(listName, dataIndex)
+    if (field.type === 'select-dynamic') {
+      let origin_value = field.value
+      let dvalue = []
+      if (origin_value && origin_value[0]) {
+        let real_value = value.filter(x => x.key != origin_value[0].key)
+        if (real_value && real_value[0]) {
+          dvalue = real_value
+        }
+      } else {
+        dvalue = value
+      }
+      dispatch({
+        type: FIELD_ON_CHANGE,
+        listName,
+        dataIndex,
+        value: dvalue,
+      })
+    } else {
+      dispatch({
+        type: FIELD_ON_CHANGE,
+        listName,
+        dataIndex,
+        value,
+      })
+    }
   }
 }
 

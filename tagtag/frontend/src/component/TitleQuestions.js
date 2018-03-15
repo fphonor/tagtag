@@ -117,10 +117,23 @@ const _getProperContent = (field, {title}) => {
 const on_change_of_field = (that, dataIndex, question, questions) => {
   return value => {
     console.log('on_change_of_field', dataIndex, question, questions, that, value)
-    let field_value = value && value[0] && value[0].key
+
+    let get_new_field_value = (question, dataIndex, value) => {
+      let origin_value = question[dataIndex]
+      if (origin_value) {
+        let real_value = value.filter(x => x.key != origin_value)
+        if (real_value && real_value[0]) {
+          return real_value[0].key
+        } else {
+          return undefined
+        }
+      } else {
+        return parseInt(value[0].key, 10)
+      }
+    }
     that.setState(({ questions }) => ({
       questions: questions.map(x => {
-        return x === question ? {...x, [dataIndex]: field_value ? parseInt(field_value, 10) : undefined} : x
+        return x === question ? {...x, [dataIndex]: get_new_field_value(question, dataIndex, value)} : x
       })
     }))
   }
@@ -191,7 +204,7 @@ class QuestionsBase extends React.Component {
       })
     },
     getCheckboxProps: record => ({
-      disabled: false 
+      disabled: false
     }),
   }
 
@@ -556,7 +569,7 @@ class TitleQuestions extends QuestionsBase {
           <Col span={3} style={{ textAlign: 'left' }}>
             <Button type="primary" onClick={this.notPassReview}
               disabled={
-                title.label_review_status === '评审通过' 
+                title.label_review_status === '评审通过'
               }>评审不通过</Button>
           </Col>
         </Row>
