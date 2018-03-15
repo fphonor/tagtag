@@ -367,7 +367,7 @@ def update_question_status_to_es(title_ident):
             title_ident=title_ident,
             label_tag_status=title.label_tag_status,
             label_tag_user=title.label_tag_user,
-            questionDetail=questions,
+            question_detail=questions,
         )
         if title.label_review_status and title.label_review_user:
             # 点击 评审通过 按钮时，传入如下参数：
@@ -760,7 +760,9 @@ class DeleteQuestion(graphene.Mutation):
 
     def mutate(self, info, **kwargs):
         table_name = 'question_detail'
-        return delete_mutate(DeleteQuestion, table_name, Question, kwargs, info)
+        delete_mutate(DeleteQuestion, table_name, Question, kwargs, info)
+        es_res = update_question_status_to_es(kwargs['title_ident'])
+        return DeleteQuestion(status=es_res['result'])
 
 
 class ChangeDiscourse(graphene.Mutation):
@@ -873,7 +875,7 @@ def _mutate(MutationClass, res_field_name, table_name, Class, kwargs, info, pk='
         )
 
 
-def delete_mutate(MutationClass, table_name, Class, kwargs, info):
+def delete_mutate(MutationClass, table_name, Class, kwargs, info, status='ok'):
     conn = utils.get_conn()
     with conn.cursor() as cur:
         cur.execute(
@@ -889,7 +891,7 @@ def delete_mutate(MutationClass, table_name, Class, kwargs, info):
             kwargs
         )
         conn.commit()
-        return MutationClass(status="ok")
+        return MutationClass(status=status)
 
 
 class Mutation(graphene.ObjectType):
