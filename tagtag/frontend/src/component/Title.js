@@ -295,6 +295,7 @@ class Discourse extends React.Component {
   }
 
   notPassReview = async () => {
+    let {discourse} = this.state
     let {data, errors} = await this.props.client.mutate({
       mutation: gql`
         mutation not_pass_discourse_review(
@@ -349,7 +350,7 @@ class Discourse extends React.Component {
           }
         }
       `,
-      variables: this.state.discourse
+      variables: {...discourse, review_fail_reason: discourse.review_fail_reason ? discourse.review_fail_reason : ""}
     })
     if (errors) {
       alert("评审操作不成功: " + errors.map(x => x.message))
