@@ -15,7 +15,7 @@ class Profile extends Component {
   _modify_user() {
     let register_user_info = this.state.current_user
     register_user_info = {...register_user_info, role: JSON.stringify({
-      ...register_user_info.role,
+      role: register_user_info.role,
       discourse_role: register_user_info.discourse_role,
       skill_role: register_user_info.skill_role,
     })}
@@ -126,7 +126,9 @@ class Profile extends Component {
         <Row gutter={24}>
           <Col span={8} style={{display: "block"}} key={4}>
             <FormItem label="密码" >
-              <Input value={current_user.password} onChange={({target: {value}}) => this.setState({password: value})} type="password" />
+              <Input value={current_user.password} onChange={({target: {value}}) => this.setState(state => ({
+                current_user: {...state.current_user, password: value}
+              }))} type="password" />
             </FormItem>
           </Col>
         </Row>

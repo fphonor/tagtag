@@ -50,6 +50,7 @@ class AdvancedSearchForm extends React.Component {
             defaultValue={field.defaultValue || ""}
             size='small'
             disabled={!!field.disabled}
+            value={field.value || ""}
             onChange={(value) => field.onChange(value)} >
             {field.options.map(o => (<Option value={o.value} key={o.value}>{o.text}</Option>))}
           </Select>

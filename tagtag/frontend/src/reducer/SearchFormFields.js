@@ -87,12 +87,14 @@ const titles = bindListNameWithSearchFormFields({
       title: '平台',
       type: 'select',
       dataIndex: 'platform',
+      value: "u3",
       options:[{value: "u2", text: "u2"}, {value: "u3", text: "u3"}, {value: "itest", text: "itest"}]
     }, {
       title: '类型',
       type: 'select',
       dataIndex: 'title_type',
-      options:[{value: "tk", text: "题库"}, {value: "教材", text: "教材"}, ]
+      value: "教材",
+      options:[{value: "题库", text: "题库"}, {value: "教材", text: "教材"}, ]
     }, {
       title: '教材',
       type: 'select-dynamic',
