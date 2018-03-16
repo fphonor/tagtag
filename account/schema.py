@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate
 from django.conf import settings
 
 import jwt
+import json
 import graphene
 from graphene_django import DjangoObjectType
 
@@ -24,6 +25,10 @@ class CreateUser(graphene.Mutation):
         role = graphene.String(required=True)
 
     def mutate(self, info, username, password, email, role):
+        user = get_user(info)
+        role = json.loads(user.role)
+        if role['role'] != 'manager':
+            raise Exception('只有管理员可以添加新用户')
         if not (username and password and email and role):
             raise Exception('字段值不可为空')
         if User.objects.filter(username=username).count() > 0:

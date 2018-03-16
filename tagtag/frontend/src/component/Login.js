@@ -218,9 +218,6 @@ class Login extends Component {
           </Row>
           <Row gutter={24}>
             <Col span={4} style={{display: "block", textAlign: 'right'}} key={5}>
-              <Button type="default" onClick={this._toggleLoginState}>
-                去{ this.state.login ? "注册" : "登录" }
-              </Button>
             </Col>
             <Col span={3} style={{display: "block", textAlign: 'right'}} key={5}>
               <Button type="primary" onClick={this.state.login ? this._login.bind(this) : this._add_user.bind(this)}>{ this.state.login ? "登录" : "注册" }</Button>
