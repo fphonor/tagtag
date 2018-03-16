@@ -93,7 +93,9 @@ class AdvancedSearchForm extends React.Component {
             || Math.floor(24/f.sibling_num)
           } style={{display: "block"}} key={i}>
           <FormItem
-            {...(('教材' === f.title && jiaocai_formItemLayout) || ('微技能L2' === f.title && skill_formItemLayout) || formItemLayout)}
+            {...(('教材' === f.title && jiaocai_formItemLayout) 
+             || ('微技能L2' === f.title && skill_formItemLayout)
+             || formItemLayout)}
             label={f.title}
             hasFeedback
           >

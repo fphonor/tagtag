@@ -73,7 +73,7 @@ def export_question_details(req):
     print(params)
     print('-' * 50)
     url = 'http://54.223.130.63:5000/export'
-    r = requests.post(url, data=params).json()
+    res = requests.post(url, data=params).json()
     CSV_FIELD_NAMES = [
         "ques_index",
         "skill_level_1",
@@ -124,7 +124,62 @@ def export_question_details(req):
         "adjectival_clause_num",
         "adverbial_clauses_num",
     ]
-    f = get_StringIO_obj(CSV_FIELD_NAMES, r['result'])
+
+    CSV_FIELD_NAMES = [
+        ("ques_index", "小题序号",),
+        ("skill_level_1", "1级微技能",),
+        ("skill_level_2", "2级微技能",),
+        ("content_level_1", "1级内容标签",),
+        ("content_level_2", "2级内容标签",),
+        ("title_ident", "题目编号",),
+        ("title_detail_path", "题目详细路径",),
+        ("title_course", "教材",),
+        ("discourse_tag_user", "语篇标注人",),
+        ("tag_status", "语篇标注状态",),
+        ("discourse_review_user", "语篇评审人",),
+        ("review_status", "语篇评审状态",),
+        ("label_tag_user", "微技能标注人",),
+        ("label_tag_status", "微技能标注状态",),
+        ("label_review_user", "微技能评审人",),
+        ("label_review_status", "微技能评审状态",),
+        ("platform", "平台",),
+        ("title_type", "类型",),
+        ("title_category", "语言技能",),
+        ("discourse_code", "语篇编号",),
+        ("ls_domain", "听力领域",),
+        ("re_domain", "阅读领域",),
+        ("ls_genre", "听力文本体裁",),
+        ("re_genre", "阅读文本体裁",),
+        ("ls_activity_type", "听力活动类型",),
+        ("ls_authenticity", "听力素材真实性",),
+        ("word_num", "文本词数",),
+        ("avg_syllable_num", "平均音节数",),
+        ("lemma_num", "词元数",),
+        ("family_num", "词族数",),
+        ("common_rate", "通用词汇占比",),
+        ("academic_rate", "学术词汇占比",),
+        ("ls_audio_type", "音频类型",),
+        ("ls_speed_type", "语速（wpm）分档",),
+        ("ls_speed_syllable", "每分钟音节数",),
+        ("ls_voice_type", "口音",),
+        ("re_familiarity", "话题熟悉度",),
+        ("re_is_chart", "是否包含图表辅助信息",),
+        ("sentence_num", "句子数量",),
+        ("avg_words_per_sent", "平均词数",),
+        ("re_flesch_kincaid_grade_level", "文本可读性指标",),
+        ("compound_sent_semantic_exten_num", "并列句-语意引申句子数量",),
+        ("compound_sent_adversative_num", "并列句-转折对比句子数量",),
+        ("compound_sent_select_num", "并列句-选择句子数量",),
+        ("noun_clauses_num", "名词性从句数量",),
+        ("adjectival_clause_num", "形容词性从句数量",),
+        ("adverbial_clauses_num", "副词性从句数量",),
+    ]
+    CSV_FIELD_NAME_DICT = dict(CSV_FIELD_NAMES)
+    CSV_FIELD_NAMES_ = {fn for (fn, cn) in CSV_FIELD_NAMES}
+    f = get_StringIO_obj(
+        [cn for (fn, cn) in CSV_FIELD_NAMES],
+        [dict(map(lambda x: (CSV_FIELD_NAME_DICT[x[0]], x[1]), filter(lambda x: x[0] in CSV_FIELD_NAMES_, r.items()))) for r in res['result']]
+    )
     resp = StreamingHttpResponse(f.getvalue(), content_type="text/csv")
     resp['Content-Disposition'] = 'attachment; filename=export_%s.csv' % datetime.datetime.now().strftime('%Y%m%d_%H%M')
     return resp
