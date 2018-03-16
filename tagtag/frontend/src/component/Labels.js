@@ -362,7 +362,8 @@ class Labels extends LabelsBase {
         formFields={
           searchFormFields.map(f => ({
             ...f,
-            defaultValue: defaultLabelFields[f.dataIndex]
+            defaultValue: defaultLabelFields[f.dataIndex],
+            value: defaultLabelFields[f.dataIndex]
           })).map(f => {
             return f.type === 'select-dynamic'
             ? {...f,
