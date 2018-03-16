@@ -123,68 +123,7 @@ class Login extends Component {
   }
   render() {
     if (this.props.currentUser && this.props.currentUser.token) {
-      return <div>
-        { this.props.currentUser.role.role === 'manager' &&
-        <Form className="ant-advanced-search-form">
-          <Row gutter={24}>
-            <h2 className="mv3">添加新用户</h2>
-          </Row>
-          <Row gutter={24}>
-            <Col span={8} style={{display: "block"}} key={3}>
-              <FormItem label="邮箱" >
-                <Input onChange={({target: {value}}) => this.setState({email: value})}/>
-              </FormItem>
-            </Col>
-          </Row>
-          <Row gutter={24}>
-            <Col span={8} style={{display: "block"}} key={2}>
-              <FormItem label="用户名" >
-                <Input onChange={({target: {value}}) => this.setState({username: value})}/>
-              </FormItem>
-            </Col>
-          </Row>
-          <Row gutter={24}>
-            <Col span={8} style={{display: "block"}} key={4}>
-              <FormItem label="密码" >
-                <Input onChange={({target: {value}}) => this.setState({password: value})} type="password" />
-              </FormItem>
-            </Col>
-          </Row>
-          <Row gutter={24}>
-            <Col span={8} style={{display: "block"}} key={4}>
-              <FormItem label="语篇标注角色" >
-                <select
-                  onChange={this._set_discourse_role.bind(this)}
-                  style={{ width: '100%' }}
-                  >
-                  <option value="">---</option>
-                  <option value="discourse_tagger">标注人</option>
-                  <option value="discourse_reviewer">审批人</option>
-                </select>
-              </FormItem>
-            </Col>
-            <Col span={8} style={{display: "block"}} key={4}>
-              <FormItem label="微技能标注角色" >
-                <select
-                  onChange={this._set_skill_role.bind(this)}
-                  style={{ width: '100%' }}
-                  >
-                  <option value="">---</option>
-                  <option value="skill_tagger">标注人</option>
-                  <option value="skill_reviewer">审批人</option>
-                </select>
-              </FormItem>
-            </Col>
-          </Row>
-          <Row gutter={24}>
-            <Col span={8} style={{display: "block", textAlign: 'right'}} key={5}>
-              <Button type="primary" onClick={this._add_user.bind(this)}>添加新用户</Button>
-            </Col>
-          </Row>
-        </Form>
-        }
-        { this.props.currentUser.role.role !== 'manager' && <Redirect to="titles"/> }
-      </div>
+      return <Redirect to="titles"/>
     } else {
       return (
         <Form
