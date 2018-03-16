@@ -501,10 +501,9 @@ class Discourse extends React.Component {
                 onChange={this.handleSelectFieldChange('ls_voice_type')}
                 disabled={discourse.review_status === '评审通过'}
                 >
-                <Option value="澳大利亚">澳大利亚</Option>
                 <Option value="美音">美音</Option>
                 <Option value="英音">英音</Option>
-                <Option value="加拿大">加拿大</Option>
+                <Option value="其他">其他</Option>
               </Select>
             </FormItem>
           </Col>
