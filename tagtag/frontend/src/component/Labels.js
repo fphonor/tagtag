@@ -147,8 +147,6 @@ class LabelsBase extends React.Component {
         })
   }
 
-  exportLabels = () => {console.log('exportLabels');}
-
   __createLabel = (label) => {
     client.mutate({
       mutation: gql`
@@ -275,6 +273,17 @@ class Labels extends LabelsBase {
     }],
     originLabels: [],
     gp_labels: [],
+  }
+
+  _get_variables() {
+    return {
+      skill_type: this.props.defaultLabelFields.skill_type,
+      label_type: this.props.defaultLabelFields.label_type,
+    }
+  }
+
+  exportLabels = () => {
+    window.open("/export/labels/?query_params=" + encodeURIComponent(JSON.stringify(this._get_variables())), "_blank")
   }
 
   addLabel = () => {

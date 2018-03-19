@@ -2,6 +2,8 @@ import requests
 import datetime
 import csv
 from io import StringIO
+from itertools import repeat
+import utils
 
 from django.http import StreamingHttpResponse
 
@@ -68,10 +70,6 @@ def export_question_details(req):
     for field_name in VALID_FIELD_NAMES:
         params[field_name] = query_params.get(field_name, "")
 
-    print(query_params)
-    print('-' * 50)
-    print(params)
-    print('-' * 50)
     url = 'http://54.223.130.63:5000/export'
     res = requests.post(url, data=params).json()
     CSV_FIELD_NAMES = [
@@ -183,3 +181,64 @@ def export_question_details(req):
     resp = StreamingHttpResponse(f.getvalue(), content_type="text/csv")
     resp['Content-Disposition'] = 'attachment; filename=export_%s.csv' % datetime.datetime.now().strftime('%Y%m%d_%H%M')
     return resp
+
+
+def export_labels(req):
+    import json
+    query_params = json.loads(req.GET['query_params'])
+    CSV_FIELD_NAMES = [
+        ("p_skill_type", "标签分类"),
+        ("p_label_type", "语言技能"),
+        ("p_label_name", "一级标签"),
+        ("c_label_name", "二级标签"),
+    ]
+    with utils.get_conn().cursor() as cur:
+        sql = ''' 
+            select p.skill_type p_skill_type, p.label_type p_label_type, p.label_name p_label_name, c.label_name c_label_name
+            from label_dict p, label_dict c
+            where p.id = c.parent_id
+            {0}
+            order by p_skill_type, p_label_type, p_label_name, c_label_name
+        '''.format(
+            ' '.join(
+                map(
+                    lambda xs: ' '.join(xs),
+                    zip(
+                        repeat('and'),
+                        map(
+                            lambda x: 'p.%s = %%(%s)s' % (x, x),
+                            query_params.keys()
+                        )
+                    )
+                )
+            )
+        )
+        print(sql)
+        cur.execute(sql, query_params)
+        rows = cur.fetchall()
+
+        VAL_MAP = {
+            "TL": "听力",
+            "YD": "阅读",
+            "XZ": "写作",
+            "KY": "口语",
+
+            "WJN": "微技能",
+            "NRKJ": "内容框架"
+        }
+        dicts = [dict(
+            zip(
+                [c.name for c in cur.description],
+                map(lambda x: VAL_MAP[x] if x in VAL_MAP else x, row)
+            )
+        ) for row in rows]
+
+        CSV_FIELD_NAME_DICT = dict(CSV_FIELD_NAMES)
+        CSV_FIELD_NAMES_ = {fn for (fn, cn) in CSV_FIELD_NAMES}
+        f = get_StringIO_obj(
+            [cn for (fn, cn) in CSV_FIELD_NAMES],
+            [dict(map(lambda x: (CSV_FIELD_NAME_DICT[x[0]], x[1]), filter(lambda x: x[0] in CSV_FIELD_NAMES_, r.items()))) for r in dicts]
+        )
+        resp = StreamingHttpResponse(f.getvalue(), content_type="text/csv")
+        resp['Content-Disposition'] = 'attachment; filename=export_%s.csv' % datetime.datetime.now().strftime('%Y%m%d_%H%M')
+        return resp
