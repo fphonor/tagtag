@@ -240,6 +240,7 @@ class TitleList extends React.Component {
       </Row>
       <div className="search-result-list">
         <Table columns={this.state.columns}
+          size="small"
           rowKey={record => record.registered}
           dataSource={this.state.data}
           pagination={this.state.pagination}

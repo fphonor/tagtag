@@ -47,7 +47,7 @@ const selectRender = dataIndex => ov => {
 const ResultEditableList = ({ gp_labels, columns, rowSelection}) => (
   <div>
     <Table dataSource={gp_labels} columns={columns} rowSelection={rowSelection}
-      style={{background: '#fff', padding: '20px 0px' }} />
+      size="small" style={{background: '#fff', padding: '20px 0px' }} />
   </div>
 )
 
