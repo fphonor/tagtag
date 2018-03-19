@@ -129,7 +129,7 @@ const users_query_params = (value) => ({
   query: gql`
     query UsersQuery {
       users {
-        id token username
+        id token username role
       }
     }
   `,
@@ -188,6 +188,8 @@ const SEARCH_CONF = {
       query_params: users_query_params,
       options_builder: (response, value, fieldList) => {
         return response.data.users
+          .map(x => ({...x, ...JSON.parse(x.role)}))
+          .filter(x => x.role !== 'manager')
           .map(x => ({value: x.id, text: x.username,}))
           .filter(x => value ? x.text.indexOf(value) !== -1: true)
       }
@@ -196,6 +198,8 @@ const SEARCH_CONF = {
       query_params: users_query_params,
       options_builder: (response, value, fieldList) => {
         return response.data.users
+          .map(x => ({...x, ...JSON.parse(x.role)}))
+          .filter(x => x.role !== 'manager')
           .map(x => ({value: x.id, text: x.username,}))
           .filter(x => value ? x.text.indexOf(value) !== -1: true)
       }
@@ -204,6 +208,8 @@ const SEARCH_CONF = {
       query_params: users_query_params,
       options_builder: (response, value, fieldList) => {
         return response.data.users
+          .map(x => ({...x, ...JSON.parse(x.role)}))
+          .filter(x => x.role !== 'manager')
           .map(x => ({value: x.id, text: x.username,}))
           .filter(x => value ? x.text.indexOf(value) !== -1: true)
       }
@@ -212,6 +218,8 @@ const SEARCH_CONF = {
       query_params: users_query_params,
       options_builder: (response, value, fieldList) => {
         return response.data.users
+          .map(x => ({...x, ...JSON.parse(x.role)}))
+          .filter(x => x.role !== 'manager')
           .map(x => ({value: x.id, text: x.username,}))
           .filter(x => value ? x.text.indexOf(value) !== -1: true)
       }
