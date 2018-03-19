@@ -158,7 +158,7 @@ class TitleList extends React.Component {
   }
 
   exportTitles() {
-    window.open("/export/question_details/?query_params=" + encodeURI(JSON.stringify(this._get_variables())), "_blank")
+    window.open("/export/question_details/?query_params=" + encodeURIComponent(JSON.stringify(this._get_variables())), "_blank")
   }
 
   handle_title_info_change= ({target: {value}}) => {
