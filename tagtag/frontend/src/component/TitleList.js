@@ -166,7 +166,8 @@ class TitleList extends React.Component {
   }
 
   showStatistics() {
-    alert("正在开发中....")
+    localStorage.setItem('query_params', JSON.stringify(this._get_variables()))
+    window.open("/static/statistics.html", "statistics")
   }
 
   _get_variables() {
@@ -235,7 +236,7 @@ class TitleList extends React.Component {
           <Button type="primary" onClick={this.exportTitles.bind(this)}>导出明细</Button>
         </Col>
         <Col span={4} style={{ textAlign: 'left' }}>
-          <Button type="primary" onClick={this.showStatistics}>统计</Button>
+          <Button type="primary" onClick={this.showStatistics.bind(this)}>统计</Button>
         </Col>
       </Row>
       <div className="search-result-list">

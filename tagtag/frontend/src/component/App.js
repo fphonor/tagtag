@@ -26,7 +26,7 @@ class App extends Component {
         iconType:"anticon anticon-bars",
         text: '题目标注'
       },
-      valid_roles: ['manager', 'default', ],
+      valid_roles: ['manager', 'default', 'checker'],
     }, {
       linkTo: "/labels",
       content: {
@@ -40,7 +40,7 @@ class App extends Component {
         iconType:"user",
         text: '个人信息'
       },
-      valid_roles: ['default', 'manager'],
+      valid_roles: ['default', 'manager', 'checker'],
     }],
   }
   toggle = () => {

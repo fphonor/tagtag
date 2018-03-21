@@ -5,7 +5,7 @@ from io import StringIO
 from itertools import repeat
 import utils
 
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, JsonResponse
 
 
 def get_discourses(req, discourse_ids):
@@ -181,6 +181,46 @@ def export_question_details(req):
     resp = StreamingHttpResponse(f.getvalue(), content_type="text/csv")
     resp['Content-Disposition'] = 'attachment; filename=export_%s.csv' % datetime.datetime.now().strftime('%Y%m%d_%H%M')
     return resp
+
+
+def get_statistics_data(req):
+    params = {}
+    VALID_FIELD_NAMES = [
+        "platform",
+        "title_type",
+        "title_course",
+        "unit_id",
+        "title_category",
+        "title_info",
+        "tag_status",
+        "review_status",
+        "label_tag_status",
+        "label_review_status",
+        "label_tag_user",
+        "label_review_user",
+        "discourse_tag_user",
+        "discourse_review_user",
+        "skill_level_1",
+        "skill_level_2",
+        "content_level_1",
+        "content_level_2",
+    ]
+    import json
+    query_params = json.loads(req.GET['query_params'])
+    for field_name in VALID_FIELD_NAMES:
+        params[field_name] = query_params.get(field_name, "")
+    url = 'http://54.223.130.63:5000/statistics'
+    res = requests.post(url, data=params).json()
+    print(res)
+
+    def handle_dict(d):
+        keys = d.keys()
+        print([dict(value=d[k], name=k) for k in keys])
+        return [dict(value=d[k], name=k) for k in keys]
+
+    ds = dict([(k, handle_dict(d)) for k, d in res.items()])
+
+    return JsonResponse(ds)
 
 
 def export_labels(req):

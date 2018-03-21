@@ -17,7 +17,7 @@ from django.conf.urls import include, url
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import admin
 from graphene_django.views import GraphQLView
-from material.views import export_question_details, export_labels
+from material.views import export_question_details, export_labels, get_statistics_data
 
 
 urlpatterns = [
@@ -25,5 +25,6 @@ urlpatterns = [
     url('^graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True))),
     url('^export/question_details/', export_question_details),
     url('^export/labels/', export_labels),
+    url('^data/statistics/', get_statistics_data),
     url(r'^account/', include('account.urls')),
 ]
