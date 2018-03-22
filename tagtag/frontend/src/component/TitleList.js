@@ -199,6 +199,7 @@ class TitleList extends React.Component {
       labelCol: {
         xs: { span: 6 },
         sm: { span: 6 },
+        style: {'text-align': 'left'},
       },
       wrapperCol: {
         xs: { span: 16 },
