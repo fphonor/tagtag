@@ -67,7 +67,7 @@
                 trigger: 'item',
                 formatter: "{a} <br/>{b}: {c} ({d}%)"
             },
-            series: (title == '微技能'  && data[attr]) || [
+            series: (['微技能', '内容框架'].indexOf(title) !== -1 && data[attr]) || [
                 {
                     name: title,
                     type:'pie',
@@ -90,7 +90,10 @@
     .then(data => {
       skill_info = data.skill_info;
       charts.forEach(([title, attr]) => draw_chart(data, title, attr))
-    }).then(() => draw_chart({skill_info: prepare_skill_info(skill_info)}, "微技能", "skill_info"))
+    }).then(() => {
+      draw_chart({skill_info: prepare_skill_info(skill_info)}, "微技能", "skill_info")
+      draw_chart({content_info: prepare_content_info(skill_info)}, "内容框架", "content_info")
+    })
 		.then(() => $($('.nav-item.nav-link')[0]).click())
 
     function prepare_skill_info(skill_info) {
@@ -103,7 +106,7 @@
             data: l0_keys.map(k => ({name: k, value: target.value[k]}))
         }]
         
-        let l1_targets = l0_keys.map(k => [k, skill_info.filter(x => new RegExp(k + '_[sc]').test(x.name))])
+        let l1_targets = l0_keys.map(k => [k, skill_info.filter(x => new RegExp(k + '_s').test(x.name))])
         let l1_keys = []
 
         series.push({
@@ -117,10 +120,47 @@
           })).reduce((x, y) => x.concat(y), []).reduce((x, y) => x.concat(y), [])
         })
 
-        let l2_targets = l1_keys.map(k => [k, skill_info.filter(x => new RegExp(k + '_[sc]').test(x.name))])
+        let l2_targets = l1_keys.map(k => [k, skill_info.filter(x => new RegExp(k + '_s').test(x.name))])
 
         series.push({
           name: '二级微技能',
+          type: 'pie',
+          radius: ['45%', '60%'],
+          data: l2_targets.map(([l1_keys, ts]) => ts.map(t => {
+            let keys = Object.keys(t.value);
+            return keys.map(k => ({name: k, value: t.value[k]}))
+          })).reduce((x, y) => x.concat(y), []).reduce((x, y) => x.concat(y), [])
+        })
+        return series
+    }
+    function prepare_content_info(skill_info) {
+        let target = skill_info.find(x => x.name === 'total')
+        let l0_keys = Object.keys(target.value)
+        let series = [{
+            name: '内容框架' ,
+            type:'pie',
+            radius: [0, '20%'],
+            data: l0_keys.map(k => ({name: k, value: target.value[k]}))
+        }]
+        
+        let l1_targets = l0_keys.map(k => [k, skill_info.filter(x => new RegExp(k + '_c').test(x.name))])
+        let l1_keys = []
+
+        series.push({
+          name: '一级内容框架',
+          type: 'pie',
+          radius: ['25%', '40%'],
+          data: l1_targets.map(([l0_key, ts]) => ts.map(t => {
+            let keys = Object.keys(t.value)
+            l1_keys = l1_keys.concat(keys.map(k => l0_key + '_' + k))
+            return keys.map(k => ({name: k, value: t.value[k]}))
+          })).reduce((x, y) => x.concat(y), []).reduce((x, y) => x.concat(y), [])
+        })
+
+        let l2_targets = l1_keys.map(k => [k, skill_info.filter(x => new RegExp(k + '_c').test(x.name))])
+
+        series.push({
+          name: '二级内容框架',
           type: 'pie',
           radius: ['45%', '60%'],
           data: l2_targets.map(([l1_keys, ts]) => ts.map(t => {
