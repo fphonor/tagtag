@@ -124,14 +124,14 @@ def export_question_details(req):
     ]
 
     CSV_FIELD_NAMES = [
+        ("title_course", "教材",),
         ("ques_index", "小题序号",),
+        ("title_detail_path", "题目详细路径",),
         ("skill_level_1", "1级微技能",),
         ("skill_level_2", "2级微技能",),
         ("content_level_1", "1级内容标签",),
         ("content_level_2", "2级内容标签",),
         ("title_ident", "题目编号",),
-        ("title_detail_path", "题目详细路径",),
-        ("title_course", "教材",),
         ("discourse_tag_user", "语篇标注人",),
         ("tag_status", "语篇标注状态",),
         ("discourse_review_user", "语篇评审人",),
